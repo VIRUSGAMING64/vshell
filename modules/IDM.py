@@ -1,4 +1,4 @@
-import urllib.request as request
+import urllib.request as reqs
 import http.client
 from threading import *
 import time
@@ -22,7 +22,7 @@ class downloader:
         file.close()
     
     def worker(self,l,r,url,id):
-        response:http.client.HTTPResponse = request.urlopen(url)
+        response:http.client.HTTPResponse = reqs.urlopen(url)
         response.seek(0,l) #TODO saber que retorna esa funcion
         SIZE = 4096
         size = (r-l+1)
@@ -55,7 +55,7 @@ class downloader:
         return 1
 
     def download(self,url):
-        response:http.client.HTTPResponse = request.urlopen(url)
+        response:http.client.HTTPResponse = reqs.urlopen(url)
         if 1:
             size = response.length
             response.close()
