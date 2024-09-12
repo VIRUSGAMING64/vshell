@@ -36,6 +36,7 @@ class t_user:
         self.bytes_transmited = json["bytes_transmited"]
         self.chat = json["chat"]
         self.last_edit_time = 0
+        self.download_id = -1
 
     def __init__(self,message:pyrogram.types.Message|dict) -> None:
         try:
@@ -48,8 +49,8 @@ class t_user:
             self.is_premium = message.from_user.is_premium
             self.base_dir = Gvar.ROOT + f"/{self.id}-{self.first_name}"
             self.current_dir = self.base_dir
-            self.bytes_transmited = 0
             self.chat = message.chat.id
+            self.bytes_transmited = 0
             self.download_id = -1
             self.last_edit_time = 0
         except:

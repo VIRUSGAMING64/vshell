@@ -345,7 +345,6 @@ def ACTIVATOR():
             Gvar.LOG.append(str(e))
             print(str(e))
 
-
 pool = v_pool(
     [
         ACTIVATOR,

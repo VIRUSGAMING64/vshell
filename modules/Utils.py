@@ -259,6 +259,19 @@ def NoExt(s:str):
         s = i + s
     return s
 
+def AdjustSize(size:int):
+    GB = size / 1024**3
+    MB = size / 1024**2
+    KB = size / 1024**1
+    if GB >= 1:
+        return str(round(GB,3)) + "GB"
+    if MB >= 1:
+        return str(round(MB,3)) + "MB"
+    if KB >= 1:
+        return str(round(KB,3)) + "KB"
+    return str(size) + "B"
+    pass
+
 def vid_down(user:t_user,msg:Message,bot:pyrogram.client.Client):
     try:
         do = VidDownloader(bot,user,user.chat,progress,[user,bot,"downloading video..."])
@@ -277,8 +290,10 @@ def vid_down(user:t_user,msg:Message,bot:pyrogram.client.Client):
             thumb = (NoExt(file) + ".webp")
             size = -1
             try:
+                size = os.path.getsize(file)
                 size = os.path.getsize(thumb)
                 size = os.path.getsize(file)
+                size = AdjustSize(size)
             except Exception as e:
                 Gvar.LOG.append(str(e)+f"\nthumb: {thumb}")
                 thumb = None

@@ -14,3 +14,6 @@
 pip install -r requirements.txt
 python -m bot.py
 ```
+# Last Idea:
+#### Telegram filesystem like tar files
+#### see project: [tgfs](http://github.com/VIRUSGAMING64/tgfs)

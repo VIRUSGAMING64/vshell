@@ -34,6 +34,7 @@ class downloader:
         for i in range(size / SIZE):
             data = response.read(SIZE)
             file.write(data)
+            print(len(data)*8)
         file.write(response.read(size%SIZE))
         file.close()
         response.close()
@@ -43,7 +44,7 @@ class downloader:
         mod = size % self.threads
         i = 0
         j = chunks_size
-        
+        id = 1
         while(j-chunks_size < size-mod):
             self.running += 1
             Thread(target=self.worker,args=[i,j,url,id]).start()
@@ -55,7 +56,7 @@ class downloader:
 
     def download(self,url):
         response:http.client.HTTPResponse = request.urlopen(url)
-        if response.seekable():
+        if 1:
             size = response.length
             response.close()
             return self.__download(url,size)
