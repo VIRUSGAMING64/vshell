@@ -1,9 +1,10 @@
 requests
-pyrogram    
+pyrogram   
+python-telegram-bot
+gpt4all 
 asyncio
 psutil
 flask 
 yt_dlp
-google-generativeai
 regex
 tgcrypto

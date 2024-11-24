@@ -59,6 +59,7 @@ BOT_COMMANDS = [
     ["/7z", "compress a dir"],
 ]
 
+NAME = os.getenv("NAME")
 DEBUG_URL = os.getenv("DEBUG_URL")
 DEPLOY_HOOK = os.getenv("DEPLOY_HOOK")
 GOOGLE_API = os.getenv("GOOGLE")

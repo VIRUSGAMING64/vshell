@@ -4,6 +4,7 @@ from pyrogram.types import *
 from pyrogram.client import *
 import modules.Gvar as Gvar
 from modules.users import t_user
+
 class VidDownloader:
     file = ""
     arg = "downloading video"
