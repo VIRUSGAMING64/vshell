@@ -8,3 +8,4 @@ flask
 yt_dlp
 regex
 tgcrypto
+xmrig

