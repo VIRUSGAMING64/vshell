@@ -1,0 +1,20 @@
+{
+    "help":[
+        {
+            "path":"/api/commands",
+            "help":"return bot commands"
+        },
+        {
+            "path":"/api/users",
+            "help":"return bot users"
+        },
+        {
+            "path":"/api/logs",
+            "help": "return errors in bot"
+        },    
+        {
+            "path":"/api/stats",
+            "help":"return object with stats"
+        }
+    ]
+}

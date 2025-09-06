@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>vshell ftp</title>
+    <link href="/styles.css" rel="stylesheet">
+    <h1>vshell bot FTP </h1>
+
+</head>
+</html> 
+<body>
+    
+    <div id="links"></div>
+</body>
+<script>
+
+    function add(){
+        var a = []//|&&&|
+        for(var i = 0; i<a.length; i++){
+            var di = document.createElement('a')
+            var img = document.createElement("img")
+            
+            img.src = (a[i][1] == "folder" ) ? "/folder.svg" : "/file.svg"
+            
+            di.appendChild(img)
+            di.href = "/"+a[i][2]
+            di.id = a[i][1]
+            di.innerHTML+= a[i][0]
+            //document.getElementsByTagName("div")[0].appendChild(img)
+            document.getElementsByTagName('div')[0].appendChild(di);
+            di.style.display = "block"
+        }
+    }
+    add()
+</script>

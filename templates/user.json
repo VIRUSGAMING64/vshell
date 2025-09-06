@@ -1,0 +1,14 @@
+{
+    "id":0,
+    "dc_id":1,
+    "download_id":6482374,
+    "first_name":"object1",
+    "last_name":"Lobj",
+    "lang_code":"en",
+    "username":"user",
+    "is_premium":false,
+    "current_dir":"d:/hola/",
+    "base_dir":"d:/",
+    "bytes_transmited":1024,
+    "chat":504
+}

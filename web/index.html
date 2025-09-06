@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>vshell web</title>
+    <script src="./src/tailwind/tailwind.js"></script>
+    <script src="./src/react/react.production.min.js"></script>
+    <script src="./src/react/react-dom.production.min.js"></script>
+    <script src="./src/react/babel.min.js"></script>
+    <style>
+        *::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-900 text-white">
+
+    <script type="text/babel">
+
+        const username = String(Math.random()).split('.')[1];
+        const password = String(Math.random()).split('.')[1];
+
+        
+
+        const reg = new RegExp('```(.*?)```', 'gi');
+        const formated = ''.replace(reg, '<code>$1</code>');
+        console.log(formated);
+
+
+        function UserInput(props) {
+            return <div className='w-full h-16 mb-4 flex pt-4 z-index:10 justify-center'>
+                <div className='w-full h-full bg-slate-800 rounded-full mr-4 ml-2  border border-slate-700 flex items-center pl-4 pr-4'>
+                    <input type="text" className='w-full h-full' Style='background:transparent; outline:none' onInput={props.handleInput} value={props.message} placeHolder='Type your message here.' />
+                </div>
+                <div>
+                    <div className='w-12 h-12 bg-indigo-500 rounded-full mr-2' onClick={props.handleSend}></div>
+                </div>
+            </div>
+        }
+
+        function Message(props) {
+            let style1, style2;
+            if (props.rol == 'user') {
+                style1 = 'flex full  justify-end';
+                style2 = 'bg-indigo-500 p-4 m-4 rounded-lg w-2/3';
+            }
+            else {
+                style1 = 'flex w-full';
+                style2 = 'bg-slate-700 p-4 m-4 rounded-lg w-2/3';
+            }
+            if (props.type = 'ERROR') {
+                style2 += 'border border-red-500';
+            }
+
+            return <div className={style1}>
+                <div className={style2}>
+                    {props.content}
+                </div>
+            </div>
+        }
+
+        function Messages(props) {
+            return <div className='h-full p-2 overflow-y-scroll'>
+                {props.chat.map(message => <Message rol={message.rol} content={message.content} />)}
+            </div>
+        }
+
+        function Chat() {
+
+
+            let [message, setMessage] = React.useState('');
+            let [chat, setChat] = React.useState([]); // arreglo de mensajes
+            let [lastRol, setLastRol] = React.useState('')
+
+            function handleInput(ev) {
+                setMessage(ev.nativeEvent.target.value);
+            }
+
+            async function handleSend() {
+                if (message.split(' ').join('') != '' && lastRol != 'user') {
+                    chat.push({ rol: 'user', content: message });
+
+                    let pregunta = message;
+
+                    setMessage('');
+                    setLastRol('user')
+
+                    let res, type;
+
+                    try {
+                        res = await fetch(
+                            `https://mapi-a2dm.onrender.com/query/?quest="${pregunta}"&username=${username}&password=${password}`
+                        );
+                        type = 'MESSAGE';
+
+                    } catch (error) {
+
+                        res = {
+                            text: () => { return 'ERROR: Conection error, try later.' }
+                        }
+                        type = 'ERROR';
+                    }
+
+                    chat.push({ rol: 'gemini', content: await res.text(), type });
+                    setChat(chat)
+                    setLastRol('gemini');
+
+
+                }
+            }
+
+            return <div className='flex-col flex h-full'>
+                <Messages chat={chat} />
+                <UserInput handleInput={handleInput} handleSend={handleSend} message={message} />
+            </div>
+        }
+
+        function GeminiChat() {
+            const chat = { name: 'Gemini chat' };
+            
+
+            return <div className='flex flex-col h-full'>
+                <Chat />
+            </div>;
+        }
+
+
+
+        function Command(data) {
+            return <div className='p-4 bg-slate-900 rounded-md  m-4'>
+                <b>{data.name}</b>: <span>{data.desc}</span>
+            </div>
+        }
+
+        function Button(data) {
+            function handleClick() {
+                data.setActive(data.title)
+            }
+            return <div className='p-2 pl-4 pr-4 bg-slate-800 rounded-md m-2 cursor-pointer hover:bg-slate-700 transition-all active:bg-slate-800' onClick={handleClick}>
+                {data.title}
+            </div>
+        }
+
+        function Panel(data) {
+            let buttons = [];
+
+            for (const key in data.comps) {
+                if (Object.hasOwnProperty.call(data.comps, key)) {
+
+                    buttons.push(key);
+
+                }
+            }
+
+            console.log(data);
+
+            if (data.panel == 'visible') {
+
+                return <div className='w-96 h-full'>
+                    {buttons.map(button => <Button title={button} setActive={data.setActive} />)}
+                </div>
+            }
+            else {
+                return <div className='w-0 h-full overflow-hidden'>
+                    {buttons.map(button => <Button title={button} setActive={data.setActive} />)}
+                </div>
+            }
+        }
+
+        function Data(props) {
+
+            const usr_temp = {
+                USER_ID: 0,
+                LAST_MESSAGE_ID: 1,
+                LAST_MESSAGE_DOWNLOAD_ID: 13,
+                CHAT_ID: 14,
+                DC_ID: 15,
+                VERIFIED: 16,
+                PREMIUM: 17,
+                LANG_CODE: 18,
+                LAST_NAME: 19,
+                FIRST_NAME: 20,
+                USERNAME: 21
+            };
+
+
+            switch (props.active) {
+                case 'commands':
+                    return <div className='w-full bg-slate-950 pl-4 pr-7 pt-8 overflow-scroll overflow-scroll'>
+                        <div className='text-5xl pb-8'>{props.active}</div>
+                        <div>
+                            {props.data.commands.map(command => <Command name={command[0]} desc={command[1]} />)}
+                        </div>
+                    </div>
+                case 'users':
+                    return <div className='w-full bg-slate-950 pl-4 pr-7 pt-8 overflow-scroll overflow-scroll'>
+                        <div className='text-5xl pb-8'>{props.active}</div>
+                        <div>
+                            <table>
+                                <tr >
+                                    {Object.keys(usr_temp).map(tmp => <th className='border p-2'>{tmp}</th>)}
+                                </tr>
+                                {props.data.users.map(user =>
+                                    <tr>
+                                        <td className='border p-2 text-slate-100'>{user[usr_temp.USER_ID]}</td>
+                                        <td className='border p-2 text-slate-100'>{user[usr_temp.LAST_MESSAGE_ID]}</td>
+                                        <td className='border p-2 text-slate-100'>{user[usr_temp.LAST_MESSAGE_DOWNLOAD_ID]}</td>
+                                        <td className='border p-2 text-slate-100'>{user[usr_temp.CHAT_ID]}</td>
+                                        <td className='border p-2 text-slate-100'>{user[usr_temp.DC_ID]}</td>
+                                        <td className='border p-2 text-slate-100'>{user[usr_temp.VERIFIED]}</td>
+                                        <td className='border p-2 text-slate-100'>{user[usr_temp.PREMIUM]}</td>
+                                        <td className='border p-2 text-slate-100'>{user[usr_temp.LANG_CODE]}</td>
+                                        <td className='border p-2 text-slate-100'>{user[usr_temp.LAST_NAME]}</td>
+                                        <td className='border p-2 text-slate-100'>{user[usr_temp.FIRST_NAME]}</td>
+                                        <td className='border p-2 text-slate-100'>{user[usr_temp.USERNAME]}</td>
+                                    </tr>
+                                )}
+
+                            </table>
+                        </div>
+                    </div>
+                case 'chat':
+                    return <div className='w-full bg-slate-950 pl-4 pr-7 pt-8 overflow-scroll overflow-scroll'><GeminiChat /></div>
+                default:
+                    return <div className='w-full bg-slate-950 pl-4 pr-7 pt-8 overflow-scroll overflow-scroll'>
+                        <div className='text-5xl pb-8'></div>
+                        <div>
+
+                        </div>
+                    </div>
+            }
+        }
+
+        function CloseButton(data) {
+            return <div className='bg-slate-950'>
+                <div className='w-12 h-12 flex items-center justify-center cursor-pointer hover:bg-slate-900/50 rounded-md' onClick={data.toggle_panel}>
+                    <div>
+                        <div className='w-4 h-0.5 bg-white mt-1 mb-1'></div>
+                        <div className='w-4 h-0.5 bg-white mt-1 mb-1'></div>
+                        <div className='w-4 h-0.5 bg-white mt-1 mb-1'></div>
+                    </div>
+                </div>
+            </div>;
+        }
+
+        function App(props) {
+
+
+            let [active, setActive] = React.useState('commands');
+            let [panel_state, toggle_panel] = React.useState('visible');
+
+
+            function handle_click() {
+                if (panel_state == 'hidden') {
+                    toggle_panel('visible');
+                } else {
+                    toggle_panel('hidden');
+                }
+            }
+
+
+            let data = {
+                commands: props.commands,
+                users: props.users,
+                chat: true
+            }
+
+            return <div className='h-screen flex'>
+                <Panel comps={data} setActive={setActive} panel={panel_state} />
+                <CloseButton toggle_panel={handle_click} />
+                <Data data={data} active={active} />
+            </div>
+        }
+
+
+
+
+        async function init() {
+
+            let command_api = await fetch('/api/commands');
+            let commands = await command_api.json();
+            console.log(commands)
+
+            let users_api = await fetch('/api/users');
+            let users = await users_api.json();
+            console.log(users)
+
+            const root = ReactDOM.createRoot(document.body);
+
+            root.render(<App commands={commands} users={users} />);
+        }
+
+        window.onload = init;
+
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,17 @@
+* {
+    margin: 0px;
+    padding: 0px;
+}
+a {
+    margin-top: 3px;
+    font-style: oblique;
+    font-weight: bold;
+    width: fit-content;
+}
+h1 {
+    border-bottom-width: 2px;
+    border-bottom-style: solid;
+}
+img{
+    height: 15px;
+}

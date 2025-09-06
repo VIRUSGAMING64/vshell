@@ -1,0 +1,9 @@
+requests
+pyrogram   
+python-telegram-bot
+asyncio
+psutil
+flask 
+yt_dlp
+regex
+tgcrypto

@@ -1,0 +1,58 @@
+[
+    [
+        "/send",
+        "send a file"
+    ],
+    [
+        "/cc",
+        "copy element"
+    ],
+    [
+        "/cv",
+        "paste file"
+    ],
+    [
+        "/sz",
+        "get file size"
+    ],
+    [
+        "/cat",
+        "get 4096 first bytes of file"
+    ],
+    [
+        "/geturl",
+        "download url"
+    ],
+    [
+        "/stats",
+        "get server stats"
+    ],
+    [
+        "/tree",
+        "make directorys tree"
+    ],
+    [
+        "/mkdir",
+        "make a directory"
+    ],
+    [
+        "/chdir",
+        "change of directory"
+    ],
+    [
+        "/note",
+        "make a file to write in her"
+    ],
+    [
+        "/cd",
+        "show actual directory"
+    ],
+    [
+        "/news",
+        "show work in progress"
+    ],
+    [
+        "/help",
+        "send help"
+    ]
+]
