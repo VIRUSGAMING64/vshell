@@ -1,4 +1,4 @@
-from threading import *
+import threading as th
 import time
 import os
 import modules.Gvar as Gvar
@@ -24,7 +24,7 @@ def Time(func:callable,tm:int):
         time.sleep(tm)
         func()
 
-class Timer:
+class v_Timer:
     def __init__(self,func=None,time:list=[],deamons = []):
         
         self.time = time
@@ -45,7 +45,7 @@ class Timer:
             if self.time[i] < 0:
                 raise "time can't be < 0"
             self.threads.append(
-                Thread(target=Time,args=[func,self.time[i]])
+                th.Thread(target=Time,args=[func,self.time[i]])
             )
             i+=1
     def start(self,pos=None):
@@ -59,19 +59,19 @@ class Timer:
     def add(self,func:callable,time:int):
         self.funcs.append(func)
         self.time.append(time)
-        self.threads.append(Thread(target=Time,args=[func,time]))
+        self.threads.append(th.Thread(target=Time,args=[func,time]))
         self.start(len(self.time)-1)
 
 class v_pool:
-    funcs:list[Thread] = []
+    funcs:list[th.Thread] = []
     def __init__(self,funcs:list,args:list[list]=[],sequence:bool=False):
         for i in range(len(funcs)):
             if(i < len(args)):
                 if args[i] == None:
                     args[i] = ()    
-                funcs[i] = Thread(target=funcs[i],args=args[i])
+                funcs[i] = th.Thread(target=funcs[i],args=args[i])
             else:
-                funcs[i] = Thread(target=funcs[i])
+                funcs[i] = th.Thread(target=funcs[i])
         self.sequence = sequence
         self.funcs = funcs
     def start_all(self,deamon = 0,indices = []):
@@ -100,7 +100,7 @@ class v_pool:
         else:
             self.funcs[index].daemon=deamon
     def add_thread(self,func:callable,start = 1,deamon=0):
-        func=Thread(target=func,deamon=deamon)
+        func=th.Thread(target=func,deamon=deamon)
         self.funcs.append(func)
         if(start):
             self.funcs[len(self.funcs)].start()
@@ -126,13 +126,13 @@ class PoolQueueHandler:
                 if len(self.QUEUE) == 0:
                     break
                 self.running += 1            
-                Thread(target=self.Factivator,daemon=self.daemon,args=[self.QUEUE[0]]).start()
+                th.Thread(target=self.Factivator,daemon=self.daemon,args=[self.QUEUE[0]]).start()
                 self.QUEUE.pop(0)
             time.sleep(self.TTL)      
     
     def run(self,daemon = False):
         self.daemon = daemon
-        Thread(target=self.__run,daemon=daemon).start()
+        th.Thread(target=self.__run,daemon=daemon).start()
 
     def add(self,args:types.Iterable):
         lis : list = []

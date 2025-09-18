@@ -5,7 +5,7 @@ import modules.Gvar as Gvar
 from modules.datatypes import *
 from pyrogram.emoji import *
 
-USERS = {  }
+USERS = {}
 
 def sizeof(dir:str):
     try:

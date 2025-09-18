@@ -2,7 +2,6 @@ import modules.Gvar as Gvar
 import pyrogram
 from pyrogram.client import *
 from pyrogram.emoji import *
-from pyrogram.filters import *
 from pyrogram.file_id import *
 from pyrogram.errors import *
 from pyrogram.types import *

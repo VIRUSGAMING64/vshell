@@ -12,15 +12,26 @@ bot = Client(
     api_id=Gvar.API_ID,
     api_hash=Gvar.API_HASH,
     workers=Gvar.WORKERS,
-    bot_token=Gvar.TOKEN
+    phone_code="53",
+    phone_number="+5356563068"
 )
+"""
+if you need use as bot token remove phone_code and phone_number 
+and add line bot_token
+"""
+
 
 def DIRECT_REQUEST_HANDLER(client: Client, message: Message):
+    if message == None:
+        return
     temp_user = GetUser(message)
     Gvar.QUEUE_DOWNLOAD.append([message,temp_user])
     data = Utils.USER_PROCCESS(temp_user,message,bot)
+    if data == 0:
+        DIRECT_REQUEST_HANDLER(client,message.reply_to_message)
+        return
     try:
-        message.reply(data)
+        mes = message.reply(str(data))
     except Exception as e:
         Gvar.LOG.append(str(e))
 
@@ -60,7 +71,7 @@ def INLINE_REQUEST_HANDLER(client, message: InlineQuery):  # this is hard
             )
         )
 
-    message.answer(
+    asw = message.answer(
         results=results,
         cache_time=1000
     )
@@ -94,8 +105,8 @@ def DOWNLOAD_HANDLER(data):
         if msg.media != None:
             try:
                 Gvar.DOWNLOADING = 1
-                bot.download_media(msg,user.current_dir+"/",progress=Utils.progress,progress_args=[user,bot,"downloading"])
-                bot.delete_messages(user.chat,user.download_id)
+                med=bot.download_media(msg,user.current_dir+"/",progress=Utils.progress,progress_args=tuple([user,bot,"downloading"]))
+                med2=bot.delete_messages(user.chat,user.download_id)
                 msg.reply("Downloaded !!!!",reply_to_message_id=msg.id)
                 time.sleep(60)
             except Exception as e:
@@ -175,7 +186,7 @@ def INIT():
     try:
         time.sleep(35)
         for i in Gvar.ADMINS:
-            bot.send_message(i,"bot online")
+            mes=bot.send_message(i,"bot online")
     except Exception as e:
         Gvar.LOG.append(str(e))
 
@@ -184,7 +195,7 @@ def LOG_QUEUE_HANDLER():
     while 1:
         try:
             if len(Gvar.LOG) != 0:
-                bot.send_message(Gvar.DEBUG_GROUP_ID,Gvar.LOG[0])
+                mes=bot.send_message(Gvar.DEBUG_GROUP_ID,Gvar.LOG[0])
                 Gvar.LOG.pop(0)
             time.sleep(3)
         except Exception as e:
@@ -199,7 +210,18 @@ def ACTIVATOR():
         except Exception as e:
             Gvar.LOG.append(str(e))
             print(str(e))
-            
+
+def TERMINAL():
+    while(True):
+        try:
+            data = input()
+            if data == "EOF":
+                break
+            exec(data)
+        except Exception as e:
+            Gvar.LOG.append(e)
+            print(e)
+
 pool = v_pool(
     [
         ACTIVATOR,
@@ -210,16 +232,12 @@ pool = v_pool(
         DOWNLOAD_QUEUE_HANDLER,
         TO_SEND_QUEUE_HANDLER,
         TORRENT_QUEUE_HANDLER,
-        LOG_QUEUE_HANDLER
+        LOG_QUEUE_HANDLER,
+        TERMINAL
     ],[[],[bot]]
 )
 
 pool.start_all(1)
 print("THREADS STARTEDS")
-
-try:
-    bot.run()
-except Exception as e:
-    print(str(e))
-
-time.sleep(1200)
+time.sleep(312)
+bot.run()

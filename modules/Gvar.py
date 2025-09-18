@@ -5,7 +5,7 @@ FILEROOT = os.getcwd() #for process
 ROOT = os.getcwd() + "/env"  # for user envs
 
 QUEUE_INLINE = [] #inline query
-ADMINS = [1659735368] # <- THIS IS CHAT_ID OF ADMINS
+ADMINS = [1659735368] # <-- THIS IS CHAT_ID OF ADMINS
 MUTED_USERS = [] #Use in format "code"+"number"
 QUEUE_DIRECT = [] #queue for direct messages
 FUNC_QUEUE = [] #function queues [func,args]

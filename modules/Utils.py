@@ -1,9 +1,9 @@
 import urllib.request as uq
 import sys
 import os
-import xmrig
 from modules.VidDown import *
 from modules.users import *
+from modules.compressor import Compressor
 import subprocess as sbp
 from math import *
 import pyrogram.utils
@@ -240,7 +240,7 @@ def VidComp(message:pyrogram.types.Message):
     while NoPass > 0:
         NoPass -= 1
         Gvar.END_THREAD = 0
-        Tth=th.Thread(target=upd,args=[nms,Ifile,Ofile])
+        Tth=th.Thread(target=upd,args=[nms,Ifile,Ofile],daemon=True)
         Tth.start()
         if sys.platform != "win32":
             ffmpegW(Ifile,Ofile) 
@@ -316,39 +316,6 @@ def SetZero(i:int):
         s = "0"+s
     return s
 
-class Compressor:
-    def __init__(self,user:t_user, bot:Client):
-        self.size = -1
-        self.running = -1
-        self.name = -1
-        self.curr = 0
-        self.total = 0
-        self.bot = bot
-        self.user= user
-
-    def t_progress(self):
-        time.sleep(3)
-        while self.running:
-            try:
-                self.curr = sizeof(self.name)
-                progress(self.curr,self.total,self.user,self.bot,"compressing")
-            except Exception as e:
-                print(str(e))
-                Gvar.LOG.append("compressing progress: " + str(e))
-    
-    def DirToTar(self,dirname,user:t_user,bot:Client):
-        self.running = 1
-        file=tar.TarFile(dirname+".01","w")
-        self.total = sizeof(dirname)
-        self.name = dirname + ".01"
-        try:
-            Thread(target=self.t_progress).start()
-        except Exception as e:
-            Gvar.LOG.append(str(e))
-        file.add(dirname)
-        self.running = 0
-        file.close()
-        return dirname + ".01"
 
 def Compress(filename,MAX_Z = 2000*Gvar.MB):
     id = 1
@@ -374,7 +341,7 @@ def Compress(filename,MAX_Z = 2000*Gvar.MB):
 def SendFile(user:t_user,filename,bot:Client,progress:Callable = None,args = None,thumb = None,text = ""):
     try:
         if os.path.isdir(filename):
-            comp = Compressor(user,bot)
+            comp = Compressor(user,bot,progress)
             filename = comp.DirToTar(filename,user,bot)
         size = os.path.getsize(filename)
         files = [filename]
@@ -407,7 +374,7 @@ def send_file(bot:pyrogram.client.Client,message:Message,user:t_user):
         MSG = user.current_dir + "/" + MSG
         
         if(os.path.isdir(MSG)):
-            comp = Compressor(user,bot)
+            comp = Compressor(user,bot,progress)
             MSG = user.current_dir+"/"+comp.DirToTar(MSG,user,bot)
 
         try:
@@ -464,6 +431,7 @@ def ClearCommand(command:str):
         command.append(None)
     return command
 
+
 def USER_PROCCESS(user:t_user, message: Message,bot:pyrogram.client.Client):
     MSG = str(message.text)
     command = ClearCommand(MSG)[1]
@@ -514,9 +482,13 @@ def FUNC_QUEUE_HANDLER():
         Gvar.FUNC_QUEUE.pop(0)
         func(*args)
 
-timer = Timer(
-    [   UPD_HOUR,
-        FUNC_QUEUE_HANDLER],
-    [1,60]
+timer = v_Timer(
+    [   
+        UPD_HOUR,
+        FUNC_QUEUE_HANDLER
+    ], # array with threads
+    [1,60], #interval
+   [True,True] # daemon threads
 )
+
 timer.start()
