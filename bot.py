@@ -12,8 +12,7 @@ bot = Client(
     api_id=Gvar.API_ID,
     api_hash=Gvar.API_HASH,
     workers=Gvar.WORKERS,
-    phone_code="53",
-    phone_number="+5356563068"
+    bot_token=Gvar.TOKEN
 )
 """
 if you need use as bot token remove phone_code and phone_number 
@@ -232,12 +231,10 @@ pool = v_pool(
         DOWNLOAD_QUEUE_HANDLER,
         TO_SEND_QUEUE_HANDLER,
         TORRENT_QUEUE_HANDLER,
-        LOG_QUEUE_HANDLER,
-        TERMINAL
+        LOG_QUEUE_HANDLER
     ],[[],[bot]]
 )
 
 pool.start_all(1)
 print("THREADS STARTEDS")
-time.sleep(312)
 bot.run()
