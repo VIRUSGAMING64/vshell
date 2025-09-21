@@ -4,10 +4,7 @@ import os
 from modules.VidDown import *
 from modules.users import *
 from modules.compressor import Compressor
-import subprocess as sbp
 from math import *
-import pyrogram.utils
-import yt_dlp
 from modules.pool import *
 from pyrogram.emoji import *
 from pyrogram.types import *
@@ -18,7 +15,6 @@ import requests as rq
 from modules.datatypes import *
 import modules.Gvar as Gvar
 from pyrogram.client import *
-import tarfile as tar
 
 def prog(cant,total,prec=2,UD = "uploading"):
     per = int((cant/total)*10)
@@ -37,23 +33,34 @@ def prog(cant,total,prec=2,UD = "uploading"):
     s += "\n"+uptime()
     return s
 
+def ns_to_seconds(ns):
+    return ns / 10**9
+
+last_time_progress_excecution = time.time_ns()
 def get_speed(cant:int,user:t_user):
-    L = user.last_edit_time
     R = time.time_ns()
-    time_elapsed = (R-L+1)
-    user.last_edit_time = R
-    mb_in_time = (cant - user.bytes_transmited) / (1024**2)
+    time_elapsed = ns_to_seconds(R-last_time_progress_excecution)
+    user.bytes_transmited = cant
+    if time_elapsed < 3:
+        return 0
+    mb_in_time = round((user.bytes_transmited / time_elapsed) / (1024**2))
     user.bytes_transmited = cant
     return round(mb_in_time / time_elapsed)
 
 def progress(cant, total,user:t_user,bot:pyrogram.client.Client,UD = "uploading"):
-    if (time.time_ns()//10**8)%5 == 0:
-        UD += f"\n{get_speed(cant,user)}MB/S"
-        cant = prog(cant,total,UD=UD)
-        if user.download_id == -1:
-            user.download_id = bot.send_message(user.chat,cant).id
-        else:
-            user.download_id = bot.edit_message_text(user.chat,user.download_id,cant).id
+    actual_time = time.time_ns()
+    global last_time_progress_excecution
+    delta = actual_time-last_time_progress_excecution
+    if (delta//10**9) < 5:
+        return
+    last_time_progress_excecution = actual_time
+    UD += f"\n{get_speed(cant,user)}MB/S"
+    cant = prog(cant,total,UD=UD)
+    if user.download_id == -1:
+        user.last_edit_time = time.time_ns()
+        user.download_id = bot.send_message(user.chat,cant).id
+    else:
+        user.download_id = bot.edit_message_text(user.chat,user.download_id,cant).id
 
 def GenerateDirectLink(message:Message):
     try:
@@ -282,10 +289,9 @@ def vid_down(user:t_user,msg:Message,bot:pyrogram.client.Client):
         do.download_video(msg.text)
         file = do.file
         thumb = (NoExt(file) + ".jpg")
-        size = -1
         try:
-            size = os.path.getsize(thumb)
             size = os.path.getsize(file)
+            size = os.path.getsize(thumb)
         except Exception as e:
             Gvar.LOG.append(str(e)+f"\nthumb: {thumb}")
             thumb = (NoExt(file) + ".webp")
@@ -315,7 +321,6 @@ def SetZero(i:int):
     elif len(s) == 3:
         s = "0"+s
     return s
-
 
 def Compress(filename,MAX_Z = 2000*Gvar.MB):
     id = 1
@@ -431,7 +436,6 @@ def ClearCommand(command:str):
         command.append(None)
     return command
 
-
 def USER_PROCCESS(user:t_user, message: Message,bot:pyrogram.client.Client):
     MSG = str(message.text)
     command = ClearCommand(MSG)[1]
@@ -480,6 +484,14 @@ def FUNC_QUEUE_HANDLER():
     if len(Gvar.FUNC_QUEUE) > 0:
         func,args = Gvar.FUNC_QUEUE[0]
         Gvar.FUNC_QUEUE.pop(0)
+        try:
+            if(args[USER_ID].download_id != INVALID):
+                Gvar.FUNC_QUEUE.append([func,args])                
+                time.sleep(2)
+            return 
+        except Exception as e:
+            Gvar.LOG.append(str(e))
+
         func(*args)
 
 timer = v_Timer(

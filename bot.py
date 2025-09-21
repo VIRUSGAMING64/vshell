@@ -1,7 +1,6 @@
 from modules.imports import *
 ############################################################
 
-
 def debug(e):
     _debug = open("debug-bot.txt","a")
     _debug.write(str(e) + "\n")
@@ -14,11 +13,11 @@ bot = Client(
     workers=Gvar.WORKERS,
     bot_token=Gvar.TOKEN
 )
+
 """
 if you need use as bot token remove phone_code and phone_number 
 and add line bot_token
 """
-
 
 def DIRECT_REQUEST_HANDLER(client: Client, message: Message):
     if message == None:
@@ -35,6 +34,11 @@ def DIRECT_REQUEST_HANDLER(client: Client, message: Message):
         Gvar.LOG.append(str(e))
 
 def INLINE_REQUEST_HANDLER(client, message: InlineQuery):  # this is hard    
+    """
+    don't touch this function is from documentation
+    and I (VIRUSGAMING64) don't understand nothing
+    (no nothing nothing XD)
+    """
     query = message.query
     id=message.from_user.id
     text = 'not implementated'
@@ -81,7 +85,11 @@ def DIRECT_MESSAGE_QUEUE_HANDLER():
             if len(Gvar.QUEUE_DIRECT) <= 0:
                 time.sleep(0.1)
                 continue
-            Thread(target=DIRECT_REQUEST_HANDLER,args =[Gvar.QUEUE_DIRECT[0][0], Gvar.QUEUE_DIRECT[0][1]],daemon=True).start()
+            Thread(target=DIRECT_REQUEST_HANDLER,args =[Gvar.QUEUE_DIRECT[0][CLIENT], Gvar.QUEUE_DIRECT[0][MESSAGE]],daemon=True).start()
+            """
+            Gvar.QUEUE_DIRECT[0][0] = first element in the top of queue with val: CLIENT
+            Gvar.QUEUE_DIRECT[0][1] = first element in the top of queue with val: MESSAGE
+            """
         except Exception as e:
             Gvar.LOG.append(str(e) + " DIRECT_MESSAGE_QUEUE_HANDLER")
         Gvar.QUEUE_DIRECT.pop(0)
@@ -97,26 +105,24 @@ def INLINE_MESSAGE_QUEUE_HANDLER():
             Gvar.LOG.append(str(e))
         Gvar.QUEUE_INLINE.pop(0)
 
-def DOWNLOAD_HANDLER(data):
+def DOWNLOAD_MEDIA_HANDLER(data):
     msg:pyrogram.types.Message = data[0]
     user: t_user = data[1]
-    if Gvar.DOWNLOADING == 0:
-        if msg.media != None:
-            try:
-                Gvar.DOWNLOADING = 1
-                med=bot.download_media(msg,user.current_dir+"/",progress=Utils.progress,progress_args=tuple([user,bot,"downloading"]))
-                med2=bot.delete_messages(user.chat,user.download_id)
-                msg.reply("Downloaded !!!!",reply_to_message_id=msg.id)
-                time.sleep(60)
-            except Exception as e:
-                debug(e)
-                print("in downloads first try")
-                msg.reply("Error downloading media")
-            finally:
-                Gvar.DOWNLOADING = 0
-                user.download_id = -1
-                return 1
-    return 0
+    if user.download_id != -1:
+        return INVALID
+    if msg.media != None:
+        try:
+            bot.download_media(msg,user.current_dir+"/",progress=Utils.progress,progress_args=tuple([user,bot,"downloading"]))
+            bot.delete_messages(user.chat,user.download_id)
+            user.download_id = -1
+            msg.reply("Downloaded !!!!",reply_to_message_id=msg.id)
+            time.sleep(60)
+        except Exception as e:
+            debug(e)
+            print("in downloads first try")
+            msg.reply("Error downloading media")
+        finally:
+            user.download_id = -1
     
 def DOWNLOAD_QUEUE_HANDLER():
     while 1:
@@ -125,12 +131,17 @@ def DOWNLOAD_QUEUE_HANDLER():
                 if len(Gvar.QUEUE_DOWNLOAD) < 1:
                     time.sleep(1)
                     return
-                res = DOWNLOAD_HANDLER(Gvar.QUEUE_DOWNLOAD[0])
+                data = Gvar.QUEUE_DOWNLOAD[0]
+                Gvar.QUEUE_DOWNLOAD.pop(0)
+                msg = DOWNLOAD_MEDIA_HANDLER(data)
             except Exception as e:
                 Gvar.LOG.append(str(e))
                 print(e)
-            Gvar.QUEUE_DOWNLOAD.pop(0)
-        HANDLER()
+            if msg == INVALID:
+                Gvar.QUEUE_DOWNLOAD.append(data)
+        
+        Thread(target=HANDLER).start()
+        time.sleep(1)
 
 @bot.on_inline_query()
 async def on_inline_query(client: Client, message: Message):

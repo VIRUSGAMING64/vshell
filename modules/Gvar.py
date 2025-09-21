@@ -12,6 +12,7 @@ FUNC_QUEUE = [] #function queues [func,args]
 QUEUE_TO_SEND = [] #queue of larges messages
 QUEUE_TORRENT = [] #torrent downloads
 QUEUE_DOWNLOAD = [] # queue of downloads
+QUEUE_TO_UDPATE_MESSAGE = [] #(chatid,id,str) to update message id
 LOG = [] #erros and logs
 
 START_TIME = time.time_ns()
@@ -25,7 +26,6 @@ BOT_ON = 0
 UPTIME = 0
 MANUAL = 0
 DEBUG_MODE = 1
-DOWNLOADING = 0
 MAX_MESSAGE_LENGTH = 4096 
 DEBUG_GROUP_ID = -1001809067914 #TODO
 SECOND = 10**9

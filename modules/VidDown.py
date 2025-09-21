@@ -50,7 +50,6 @@ class VidDownloader:
             'writethumbnail': True,
             'progress_hooks': [self.my_hook],
         }
-        Gvar.DOWNLOADING = 1
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             try:
                 ydl.download([url])
@@ -61,4 +60,3 @@ class VidDownloader:
             finally:
                 self.bot.delete_messages(self.user.chat,self.user.download_id)
                 self.user.download_id = -1
-        Gvar.DOWNLOADING = 0
