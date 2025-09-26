@@ -14,7 +14,7 @@ QUEUE_TORRENT = [] #torrent downloads
 QUEUE_DOWNLOAD = [] # queue of downloads
 QUEUE_TO_UDPATE_MESSAGE = [] #(chatid,id,str) to update message id
 LOG = [] #erros and logs
-
+MUTEX = False
 START_TIME = time.time_ns()
 RUNNING_THREADS = 0
 nulls_parents = 0

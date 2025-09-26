@@ -40,6 +40,7 @@ class t_user:
 
     def __init__(self,message:pyrogram.types.Message|dict) -> None:
         try:
+            self.download_chat = None
             self.id = message.from_user.id
             self.dc_id = message.from_user.dc_id
             self.first_name = message.from_user.first_name

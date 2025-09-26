@@ -112,7 +112,7 @@ def DOWNLOAD_MEDIA_HANDLER(data):
         return INVALID
     if msg.media != None:
         try:
-            bot.download_media(msg,user.current_dir+"/",progress=Utils.progress,progress_args=tuple([user,bot,"downloading"]))
+            bot.download_media(msg,user.current_dir+"/",progress=Utils.progress,progress_args=tuple([user,bot,"downloading",msg.id]))
             bot.delete_messages(user.chat,user.download_id)
             user.download_id = -1
             msg.reply("Downloaded !!!!",reply_to_message_id=msg.id)
@@ -129,10 +129,13 @@ def DOWNLOAD_QUEUE_HANDLER():
         def HANDLER():
             try:
                 if len(Gvar.QUEUE_DOWNLOAD) < 1:
-                    time.sleep(1)
+                    time.sleep(3)
                     return
+                while Gvar.MUTEX: time.sleep(0.001)
+                Gvar.MUTEX = True
                 data = Gvar.QUEUE_DOWNLOAD[0]
                 Gvar.QUEUE_DOWNLOAD.pop(0)
+                Gvar.MUTEX = False
                 msg = DOWNLOAD_MEDIA_HANDLER(data)
             except Exception as e:
                 Gvar.LOG.append(str(e))
@@ -160,10 +163,12 @@ async def on_private_message(client: Client, message: Message):
 async def on_group_message(client: Client, message: Message):
     if message.from_user.phone_number in Gvar.MUTED_USERS:
         return
+    
     if message.text == '/start':
         await message.reply("BOT ONLINE")
         Gvar.DEBUG_GROUP_ID = message.chat.id
-        return
+        return        
+
     if message.mentioned:
         await on_private_message(client,message)
 

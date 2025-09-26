@@ -20,8 +20,8 @@ def prog(cant,total,prec=2,UD = "uploading"):
     per = int((cant/total)*10)
     per2 = round((cant/total)*100)
     res = 10-per
-    s = f"{per2}%\n"
-    s += f"{round(cant/(1024**2),prec)}MB of {round(total/(1024**2),prec)}MB\n"
+    s = f"PERCENT: {per2}%\n"
+    s += f"{UD} {round(cant/(1024**2),prec)}MB of {round(total/(1024**2),prec)}MB\n"
     if per2 <= 33.333:
         s += f"{pyrogram.emoji.RED_CIRCLE}"*per
     elif per2 <= 80.0:
@@ -29,8 +29,7 @@ def prog(cant,total,prec=2,UD = "uploading"):
     else:
         s += f"{pyrogram.emoji.GREEN_CIRCLE}"*per
     s += f"{pyrogram.emoji.WHITE_CIRCLE}"*res
-    s += f"\n{UD}"
-    s += "\n"+uptime()
+    s += "\nBOT_UPTIME: "+uptime()
     return s
 
 def ns_to_seconds(ns):
@@ -40,25 +39,23 @@ last_time_progress_excecution = time.time_ns()
 def get_speed(cant:int,user:t_user):
     R = time.time_ns()
     time_elapsed = ns_to_seconds(R-last_time_progress_excecution)
+    user.bytes_transmited = cant - user.bytes_transmited
+    mb_in_time = round(((user.bytes_transmited/ (1024**2)) / time_elapsed) )
     user.bytes_transmited = cant
-    if time_elapsed < 3:
-        return 0
-    mb_in_time = round((user.bytes_transmited / time_elapsed) / (1024**2))
-    user.bytes_transmited = cant
-    return round(mb_in_time / time_elapsed)
+    return round(mb_in_time)
 
-def progress(cant, total,user:t_user,bot:pyrogram.client.Client,UD = "uploading"):
-    actual_time = time.time_ns()
+def progress(cant, total,user:t_user,bot:pyrogram.client.Client,UD = "uploading",reply_to = None):
     global last_time_progress_excecution
+    actual_time = time.time_ns()
+    UD += f"\n{get_speed(cant,user)}MB/S\nDOWNLOAD_ID:{str(reply_to)}\n"
     delta = actual_time-last_time_progress_excecution
     if (delta//10**9) < 5:
         return
     last_time_progress_excecution = actual_time
-    UD += f"\n{get_speed(cant,user)}MB/S"
     cant = prog(cant,total,UD=UD)
     if user.download_id == -1:
         user.last_edit_time = time.time_ns()
-        user.download_id = bot.send_message(user.chat,cant).id
+        user.download_id = bot.send_message(user.chat,cant,reply_to_message_id=reply_to).id
     else:
         user.download_id = bot.edit_message_text(user.chat,user.download_id,cant).id
 
@@ -395,6 +392,9 @@ def send_file(bot:pyrogram.client.Client,message:Message,user:t_user):
 
 def queuesZ():
     s = f"DOWNLOADS:{len(Gvar.QUEUE_DOWNLOAD)}\n"
+    for data in Gvar.QUEUE_DOWNLOAD:
+        if data[0].media != None:
+            s+=str(data[0].media.name) + "\n"
     s += f"DOWNLOADS LINK:{len(Gvar.FUNC_QUEUE)}\n"
     s += f"MESSAGES:{len(Gvar.QUEUE_DIRECT)}\n"
     s += f"TO_SEND:{len(Gvar.QUEUE_TO_SEND)}\n"
