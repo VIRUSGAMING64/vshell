@@ -2,6 +2,7 @@ import time
 import modules.Gvar as Gvar
 from modules.users import USERS
 import os
+import random
 import modules.Utils as Utils
 from json import *
 from flask import *
@@ -145,9 +146,13 @@ def WEB(bot):
             return text
         except Exception as e:
             return str(e)
-
-    web.run("0.0.0.0",80)
-
+    for i in range(10000):
+        port = random.randint(0,65535)
+        try:
+            web.run("0.0.0.0",port)
+            break
+        except Exception as e:
+            print(f"port {port} allready used or permission denied (run as sudo): ", str(e))
 #############################################################
 ## FLASK ##
 ###########

@@ -7,3 +7,4 @@ __pycache__
 modules/__pycache__
 .gitignore
 .vscode/tasks.json
+bots

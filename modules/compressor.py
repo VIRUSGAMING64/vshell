@@ -1,11 +1,8 @@
 import time
 import modules.Gvar as Gvar
-import tarfile
 import tarfile as tar
 import threading as th
 from modules.users import *
-
-
 
 class Compressor:
     def __init__(self,user, bot,progress = None):

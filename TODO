@@ -1,2 +1,4 @@
 1 - migrate to python-telegram-bot framework
 2 - most short user process function
+3 - (maybe francis) - in subc.sh  generate random id with log10(id) <= 4
+
