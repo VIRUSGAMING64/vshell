@@ -1,4 +1,4 @@
-.env
+﻿.env
 env
 .vscode
 virusgaming.session
@@ -8,3 +8,4 @@ modules/__pycache__
 .gitignore
 .vscode/tasks.json
 bots
+creds
