@@ -29,14 +29,26 @@
         const formated = ''.replace(reg, '<code>$1</code>');
         console.log(formated);
 
-
         function UserInput(props) {
-            return <div className='w-full h-16 mb-4 flex pt-4 z-index:10 justify-center'>
-                <div className='w-full h-full bg-slate-800 rounded-full mr-4 ml-2  border border-slate-700 flex items-center pl-4 pr-4'>
-                    <input type="text" className='w-full h-full' Style='background:transparent; outline:none' onInput={props.handleInput} value={props.message} placeHolder='Type your message here.' />
+            function onKeyDown(ev){
+                if (ev.key === 'Enter' && !ev.shiftKey) {
+                    ev.preventDefault();
+                    props.handleSend();
+                }
+            }
+            return <div className='w-full h-16 mb-4 flex pt-4 justify-center'>
+                <div className='w-full h-full bg-slate-800 rounded-full mr-4 ml-2 border border-slate-700 flex items-center pl-4 pr-4'>
+                    <input
+                        type="text"
+                        className='w-full h-full bg-transparent outline-none'
+                        onInput={props.handleInput}
+                        onKeyDown={onKeyDown}
+                        value={props.message}
+                        placeholder='Escribe tu mensaje aquí y presiona Enter'
+                    />
                 </div>
                 <div>
-                    <div className='w-12 h-12 bg-indigo-500 rounded-full mr-2' onClick={props.handleSend}></div>
+                    <div className='w-12 h-12 bg-indigo-500 rounded-full mr-2 cursor-pointer active:scale-95 transition' role='button' aria-label='Enviar' onClick={props.handleSend}></div>
                 </div>
             </div>
         }
@@ -44,76 +56,98 @@
         function Message(props) {
             let style1, style2;
             if (props.rol == 'user') {
-                style1 = 'flex full  justify-end';
+                style1 = 'flex w-full justify-end';
                 style2 = 'bg-indigo-500 p-4 m-4 rounded-lg w-2/3';
             }
             else {
                 style1 = 'flex w-full';
                 style2 = 'bg-slate-700 p-4 m-4 rounded-lg w-2/3';
             }
-            if (props.type = 'ERROR') {
-                style2 += 'border border-red-500';
+            if (props.type === 'ERROR') {
+                style2 += ' border border-red-500';
             }
 
+            const isAI = props.rol !== 'user';
             return <div className={style1}>
                 <div className={style2}>
-                    {props.content}
+                    {isAI && props.html ? <div dangerouslySetInnerHTML={{__html: props.html}} /> : props.content}
                 </div>
             </div>
         }
 
         function Messages(props) {
-            return <div className='h-full p-2 overflow-y-scroll'>
-                {props.chat.map(message => <Message rol={message.rol} content={message.content} />)}
+            const ref = React.useRef(null);
+            React.useEffect(()=>{
+                if (ref.current) {
+                    ref.current.scrollTop = ref.current.scrollHeight;
+                }
+            }, [props.chat]);
+            return <div ref={ref} className='flex-1 p-2 overflow-y-auto'>
+                {props.chat.map((message, idx) => <Message key={idx} rol={message.rol} content={message.content} type={message.type} />)}
             </div>
         }
 
         function Chat() {
 
-
             let [message, setMessage] = React.useState('');
             let [chat, setChat] = React.useState([]); // arreglo de mensajes
             let [lastRol, setLastRol] = React.useState('')
+            let [loading, setLoading] = React.useState(false);
 
             function handleInput(ev) {
                 setMessage(ev.nativeEvent.target.value);
             }
 
+            function escapeHTML(s){
+                return String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+            }
+            function formatLLM(s){
+                let safe = escapeHTML(s);
+                // bloques de código ```...```
+                safe = safe.replace(/```([\s\S]*?)```/g, (m, p1)=>{
+                    return `<pre class="bg-slate-800 p-3 rounded overflow-auto"><code>${p1}</code></pre>`;
+                });
+                // inline `code`
+                safe = safe.replace(/`([^`]+)`/g, '<code class="bg-slate-800 px-1 py-0.5 rounded">$1</code>');
+                // saltos de línea
+                safe = safe.replace(/\n/g,'<br/>');
+                return safe;
+            }
+
             async function handleSend() {
-                if (message.split(' ').join('') != '' && lastRol != 'user') {
-                    chat.push({ rol: 'user', content: message });
-
-                    let pregunta = message;
-
+                if (loading) return;
+                if (message.split(' ').join('') !== '' && lastRol !== 'user') {
+                    const pregunta = message;
+                    setChat(prev => [...prev, { rol: 'user', content: pregunta }]);
                     setMessage('');
-                    setLastRol('user')
-
-                    let res, type;
+                    setLastRol('user');
+                    setLoading(true);
 
                     try {
-                        res = await fetch(
-                            `https://mapi-a2dm.onrender.com/query/?quest="${pregunta}"&username=${username}&password=${password}`
-                        );
-                        type = 'MESSAGE';
-
-                    } catch (error) {
-
-                        res = {
-                            text: () => { return 'ERROR: Conection error, try later.' }
+                        // API libre sin autenticación (intento sin credenciales)
+                        let url = `https://mapi-a2dm.onrender.com/query/?quest=${encodeURIComponent(pregunta)}`;
+                        let res = await fetch(url);
+                        if (!res.ok) {
+                            // Fallback a variante previa que incluía username/password aleatorios si fuese necesario
+                            url = `https://mapi-a2dm.onrender.com/query/?quest=${encodeURIComponent('"'+pregunta+'"')}&username=${username}&password=${password}`;
+                            res = await fetch(url);
                         }
-                        type = 'ERROR';
+                        const text = await res.text();
+                        setChat(prev => [...prev, { rol: 'gemini', content: text, type: 'MESSAGE', html: formatLLM(text) }]);
+                        setLastRol('gemini');
+                    } catch (error) {
+                        const err = 'ERROR: Connection error, try later.';
+                        setChat(prev => [...prev, { rol: 'gemini', content: err, type: 'ERROR', html: formatLLM(err) }]);
+                        setLastRol('gemini');
+                    } finally {
+                        setLoading(false);
                     }
-
-                    chat.push({ rol: 'gemini', content: await res.text(), type });
-                    setChat(chat)
-                    setLastRol('gemini');
-
-
                 }
             }
 
             return <div className='flex-col flex h-full'>
                 <Messages chat={chat} />
+                <div className='opacity-80 text-sm px-4'>{loading ? 'Generando respuesta…' : ''}</div>
                 <UserInput handleInput={handleInput} handleSend={handleSend} message={message} />
             </div>
         }
@@ -127,6 +161,115 @@
             </div>;
         }
 
+        // -------------- Docs (README por pestañas + API) --------------
+        function mdEscape(s){
+            return s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+        }
+        function mdSlug(s){
+            return s.toLowerCase().replace(/[^a-z0-9\s-]/g,'').trim().replace(/\s+/g,'-');
+        }
+        function mdToHtml(md){
+            // Render mínimo: bloques de código, h3, listas, párrafos e inline code
+            let out = '';
+            const lines = md.split('\n');
+            let inCode = false;
+            let inList = false;
+            for (let i=0;i<lines.length;i++){
+                let l = lines[i];
+                if (l.startsWith('```')){
+                    if (!inCode){ out += '<pre class="bg-slate-800 p-3 rounded overflow-auto"><code>'; inCode=true; }
+                    else { out += '</code></pre>'; inCode=false; }
+                    continue;
+                }
+                if (inCode){ out += mdEscape(l) + '\n'; continue; }
+                if (l.startsWith('### ')){
+                    if (inList){ out += '</ul>'; inList=false; }
+                    const h = mdEscape(l.slice(4));
+                    const id = mdSlug(h);
+                    out += `<h3 id="${id}" class="text-xl font-semibold mt-6 mb-3 scroll-mt-16">${h}</h3>`; continue;
+                }
+                if (l.trim().startsWith('- ')){
+                    if (!inList){ out += '<ul class="list-disc pl-6 space-y-1">'; inList=true; }
+                    out += `<li>${mdEscape(l.trim().slice(2))}</li>`; continue;
+                }
+                if (l.trim()===''){
+                    if (inList){ out += '</ul>'; inList=false; }
+                    out += '<div class="h-2"></div>'; continue;
+                }
+                let esc = mdEscape(l).replace(/`([^`]+)`/g, '<code class="bg-slate-800 px-1 py-0.5 rounded">$1</code>');
+                out += `<p class="leading-relaxed">${esc}</p>`;
+            }
+            if (inList){ out += '</ul>'; }
+            return out;
+        }
+        function splitByHeadings(md){
+            const sections = [];
+            const regex = /^##\s+(.+)$/gm;
+            let m; const titles = [];
+            while((m = regex.exec(md)) !== null){ titles.push({idx:m.index, title:m[1]}); }
+            if (titles.length===0){ return [{title:'README', html: mdToHtml(md)}]; }
+            for (let i=0;i<titles.length;i++){
+                const start = titles[i].idx;
+                const end = (i+1<titles.length)? titles[i+1].idx : md.length;
+                const content = md.slice(start, end);
+                const title = titles[i].title;
+                const cleaned = content.replace(/^##\s+.+\n?/, '');
+                sections.push({title, html: mdToHtml(cleaned)});
+            }
+            return sections;
+        }
+        function Docs(){
+            const [tabs, setTabs] = React.useState([]);
+            const [active, setActive] = React.useState('API');
+            const [routes, setRoutes] = React.useState([]);
+            React.useEffect(()=>{
+                // README
+                fetch('/file/readme.md').then(r=>r.text()).then(md=>{
+                    const secs = splitByHeadings(md);
+                    setTabs(secs);
+                }).catch(()=>{
+                    setTabs([{title:'README', html: '<p>No se pudo cargar el README.</p>'}]);
+                })
+                // Rutas
+                fetch('/api/routes').then(r=>r.json()).then(setRoutes).catch(()=>setRoutes([]));
+            },[]);
+            function renderTabContent(){
+                if (active==='API'){
+                    return <div className='p-6'>
+                        <div className='text-2xl font-bold mb-4'>API (modules/web.py)</div>
+                        <div className='space-y-2'>
+                            {routes.map((e,i)=>
+                                <div key={i} className='p-3 bg-slate-900/70 backdrop-blur rounded border border-slate-800 flex items-start gap-3'>
+                                    <span className={'px-2 py-0.5 rounded text-xs font-bold ' + ((e.methods||[]).includes('POST')? 'bg-pink-700':'bg-indigo-700')}>{(e.methods||[]).join('/') || 'GET'}</span>
+                                    <code className='text-sm'>{e.path}</code>
+                                    {e.endpoint? <span className='text-sm text-slate-300'>— {e.endpoint}</span>: null}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                }
+                const tab = tabs.find(t=>t.title===active) || tabs[0];
+                return <div className='p-6'>
+                    <div className='leading-7 [&_pre]:mt-4 [&_pre]:mb-4 [&_pre]:text-sm [&_code]:font-mono' dangerouslySetInnerHTML={{__html: tab?.html || ''}} />
+                </div>
+            }
+            const allTabTitles = ['API', ...tabs.map(t=>t.title)];
+            return <div className='flex flex-col h-full'>
+                <div className='sticky top-0 z-10 bg-slate-950/80 backdrop-blur border-b border-slate-800 px-4 pt-3 pb-2'>
+                    <div className='flex flex-wrap gap-2'>
+                        {allTabTitles.map((t,idx)=>
+                            <button key={idx} className={'px-3 py-1.5 text-sm rounded-full border ' + (active===t? 'bg-indigo-600 border-indigo-500 text-white':'bg-slate-800 border-slate-700 text-slate-300 hover:text-white')} onClick={()=>setActive(t)}>{t}</button>
+                        )}
+                    </div>
+                </div>
+                <div className='flex-1 overflow-auto'>
+                    <div className='max-w-5xl mx-auto my-4 bg-slate-950/40 border border-slate-800 rounded-xl shadow-lg'>
+                        {renderTabContent()}
+                    </div>
+                </div>
+            </div>
+        }
+
 
 
         function Command(data) {
@@ -135,11 +278,181 @@
             </div>
         }
 
+        function CommandsTab({ items }){
+            const [q, setQ] = React.useState('');
+            const list = React.useMemo(()=>{
+                const term = q.trim().toLowerCase();
+                if (!term) return items;
+                return items.filter(c => {
+                    const name = String(c[0]||'').toLowerCase();
+                    const desc = String(c[1]||'').toLowerCase();
+                    return name.includes(term) || desc.includes(term);
+                });
+            }, [items, q]);
+            return <div className='w-full bg-slate-950 pl-4 pr-7 pt-8 overflow-y-auto'>
+                <div className='text-4xl pb-4 font-bold'>Comandos</div>
+                <div className='pb-4 text-slate-300'>Busca y revisa la explicación de cada comando.</div>
+                <div className='pb-6'>
+                    <input
+                        type='text'
+                        value={q}
+                        onChange={e=>setQ(e.target.value)}
+                        placeholder='Filtrar por nombre o descripción...'
+                        className='w-full md:w-1/2 bg-slate-800 border border-slate-700 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-600'
+                    />
+                    <div className='text-slate-400 mt-2 text-sm'>{list.length} de {items.length} resultados</div>
+                </div>
+                <div className='grid gap-3'>
+                    {list.map((command, idx) => (
+                        <div key={idx} className='p-4 bg-slate-900 rounded-md border border-slate-800'>
+                            <div className='text-lg font-semibold'><code className='bg-slate-800 px-2 py-1 rounded'>{command[0]}</code></div>
+                            <div className='text-slate-200 mt-2'>{command[1]}</div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        }
+
+        function UsersTab({ items }){
+            // items proviene de /api/users: diccionario id -> string (JSON serializado)
+            const [q, setQ] = React.useState('');
+            const rows = React.useMemo(()=>{
+                try {
+                    let pairs = [];
+                    if (Array.isArray(items)) {
+                        pairs = items;
+                    } else if (items && typeof items === 'object') {
+                        pairs = Object.entries(items);
+                    }
+                    return pairs.map(([id, raw]) => {
+                        let obj = {};
+                        try { obj = JSON.parse(String(raw)); } catch {}
+                        return {
+                            id: obj.id ?? id,
+                            username: obj.username ?? '',
+                            first_name: obj.first_name ?? '',
+                            last_name: obj.last_name ?? '',
+                            chat: obj.chat ?? '',
+                            lang_code: obj.lang_code ?? '',
+                            is_premium: obj.is_premium ?? obj.is_premiun ?? false,
+                            dc_id: obj.dc_id ?? '',
+                        };
+                    });
+                } catch { return []; }
+            }, [items]);
+            const list = React.useMemo(()=>{
+                const term = q.trim().toLowerCase();
+                if (!term) return rows;
+                return rows.filter(u =>
+                    String(u.id).includes(term) ||
+                    (u.username||'').toLowerCase().includes(term) ||
+                    (u.first_name||'').toLowerCase().includes(term) ||
+                    (u.last_name||'').toLowerCase().includes(term)
+                );
+            }, [rows, q]);
+            return <div className='w-full bg-slate-950 pl-4 pr-7 pt-8 overflow-y-auto'>
+                <div className='text-4xl pb-4 font-bold'>Usuarios</div>
+                <div className='pb-4 text-slate-300'>Personas que le han escrito al bot.</div>
+                <div className='pb-6'>
+                    <input
+                        type='text'
+                        value={q}
+                        onChange={e=>setQ(e.target.value)}
+                        placeholder='Buscar por id, username o nombre...'
+                        className='w-full md:w-1/2 bg-slate-800 border border-slate-700 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-600'
+                    />
+                    <div className='text-slate-400 mt-2 text-sm'>{list.length} usuarios</div>
+                </div>
+                <div className='overflow-x-auto border border-slate-800 rounded'>
+                    <table className='min-w-full text-left text-sm'>
+                        <thead className='bg-slate-900'>
+                            <tr>
+                                <th className='px-3 py-2 border-b border-slate-800'>ID</th>
+                                <th className='px-3 py-2 border-b border-slate-800'>Username</th>
+                                <th className='px-3 py-2 border-b border-slate-800'>Nombre</th>
+                                <th className='px-3 py-2 border-b border-slate-800'>Apellidos</th>
+                                <th className='px-3 py-2 border-b border-slate-800'>DC</th>
+                                <th className='px-3 py-2 border-b border-slate-800'>Premium</th>
+                                <th className='px-3 py-2 border-b border-slate-800'>Lang</th>
+                                <th className='px-3 py-2 border-b border-slate-800'>Chat</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {list.map(u => (
+                                <tr key={u.id} className='hover:bg-slate-900/60'>
+                                    <td className='px-3 py-2 border-b border-slate-800'>{u.id}</td>
+                                    <td className='px-3 py-2 border-b border-slate-800'>{u.username || '-'}</td>
+                                    <td className='px-3 py-2 border-b border-slate-800'>{u.first_name || '-'}</td>
+                                    <td className='px-3 py-2 border-b border-slate-800'>{u.last_name || '-'}</td>
+                                    <td className='px-3 py-2 border-b border-slate-800'>{u.dc_id || '-'}</td>
+                                    <td className='px-3 py-2 border-b border-slate-800'>{u.is_premium ? 'Sí' : 'No'}</td>
+                                    <td className='px-3 py-2 border-b border-slate-800'>{u.lang_code || '-'}</td>
+                                    <td className='px-3 py-2 border-b border-slate-800'>{u.chat || '-'}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+        function BotStats(){
+            const [stats, setStats] = React.useState([]);
+            React.useEffect(()=>{
+                let alive = true;
+                async function fetchStats(){
+                    try{
+                        const r = await fetch('/api/stats');
+                        const data = await r.json(); // viene como [[k,v], [k,v], ...]
+                        if (alive) setStats(data);
+                    }catch(e){
+                        if (alive) setStats([]);
+                    }
+                }
+                fetchStats();
+                const t = setInterval(fetchStats, 1000);
+                return ()=>{ alive=false; clearInterval(t); };
+            },[]);
+            const icons = {
+                'Uptime': '⏱️',
+                'CPU': '🧠',
+                'CPU SPEED': '⚡',
+                'CPU COUNT': '🧩',
+                'CPU_TEMP': '🌡️',
+                'MAX_CPU_TEMP': '🔥',
+                'RAM': '💾',
+                'RAM USED': '📈',
+                'RAM FREE': '📉',
+                'TOTAL DISK': '💽',
+                'DISK USED': '🗄️',
+                'DISK FREE': '📦'
+            };
+            return <div className='w-full bg-slate-950 pl-4 pr-7 pt-6 pb-6 overflow-y-auto'>
+                <div className='text-4xl pb-4 font-bold'>Estado del Bot</div>
+                <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
+                    {stats.map((row, idx)=>{
+                        const k = row[0] || '';
+                        const v = row[1] || '';
+                        const ico = icons[k] || 'ℹ️';
+                        return (
+                            <div key={idx} className='p-4 bg-slate-900/70 backdrop-blur rounded border border-slate-800'>
+                                <div className='text-sm text-slate-400'>{ico} {k}</div>
+                                <div className='text-xl font-semibold mt-1'>{v}</div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        }
+
         function Button(data) {
             function handleClick() {
                 data.setActive(data.title)
             }
-            return <div className='p-2 pl-4 pr-4 bg-slate-800 rounded-md m-2 cursor-pointer hover:bg-slate-700 transition-all active:bg-slate-800' onClick={handleClick}>
+            const isActive = data.active === data.title;
+            const base = 'p-2 pl-4 pr-4 rounded-md m-2 cursor-pointer transition-all';
+            const cls = isActive ? 'bg-indigo-600 hover:bg-indigo-600' : 'bg-slate-800 hover:bg-slate-700 active:bg-slate-800';
+            return <div className={base + ' ' + cls} onClick={handleClick}>
                 {data.title}
             </div>
         }
@@ -157,17 +470,10 @@
 
             console.log(data);
 
-            if (data.panel == 'visible') {
-
-                return <div className='w-96 h-full'>
-                    {buttons.map(button => <Button title={button} setActive={data.setActive} />)}
-                </div>
-            }
-            else {
-                return <div className='w-0 h-full overflow-hidden'>
-                    {buttons.map(button => <Button title={button} setActive={data.setActive} />)}
-                </div>
-            }
+            const width = data.panel === 'visible' ? data.width : 0;
+            return <div className='h-full overflow-auto bg-slate-950' style={{width: width}}>
+                {buttons.map(button => <Button key={button} title={button} active={data.active} setActive={data.setActive} />)}
+            </div>
         }
 
         function Data(props) {
@@ -189,41 +495,15 @@
 
             switch (props.active) {
                 case 'commands':
-                    return <div className='w-full bg-slate-950 pl-4 pr-7 pt-8 overflow-scroll overflow-scroll'>
-                        <div className='text-5xl pb-8'>{props.active}</div>
-                        <div>
-                            {props.data.commands.map(command => <Command name={command[0]} desc={command[1]} />)}
-                        </div>
-                    </div>
+                    return <CommandsTab items={props.data.commands} />
                 case 'users':
-                    return <div className='w-full bg-slate-950 pl-4 pr-7 pt-8 overflow-scroll overflow-scroll'>
-                        <div className='text-5xl pb-8'>{props.active}</div>
-                        <div>
-                            <table>
-                                <tr >
-                                    {Object.keys(usr_temp).map(tmp => <th className='border p-2'>{tmp}</th>)}
-                                </tr>
-                                {props.data.users.map(user =>
-                                    <tr>
-                                        <td className='border p-2 text-slate-100'>{user[usr_temp.USER_ID]}</td>
-                                        <td className='border p-2 text-slate-100'>{user[usr_temp.LAST_MESSAGE_ID]}</td>
-                                        <td className='border p-2 text-slate-100'>{user[usr_temp.LAST_MESSAGE_DOWNLOAD_ID]}</td>
-                                        <td className='border p-2 text-slate-100'>{user[usr_temp.CHAT_ID]}</td>
-                                        <td className='border p-2 text-slate-100'>{user[usr_temp.DC_ID]}</td>
-                                        <td className='border p-2 text-slate-100'>{user[usr_temp.VERIFIED]}</td>
-                                        <td className='border p-2 text-slate-100'>{user[usr_temp.PREMIUM]}</td>
-                                        <td className='border p-2 text-slate-100'>{user[usr_temp.LANG_CODE]}</td>
-                                        <td className='border p-2 text-slate-100'>{user[usr_temp.LAST_NAME]}</td>
-                                        <td className='border p-2 text-slate-100'>{user[usr_temp.FIRST_NAME]}</td>
-                                        <td className='border p-2 text-slate-100'>{user[usr_temp.USERNAME]}</td>
-                                    </tr>
-                                )}
-
-                            </table>
-                        </div>
-                    </div>
+                    return <UsersTab items={props.data.users} />
                 case 'chat':
-                    return <div className='w-full bg-slate-950 pl-4 pr-7 pt-8 overflow-scroll overflow-scroll'><GeminiChat /></div>
+                    return <div className='w-full bg-slate-950 pl-4 pr-7 pt-4 overflow-hidden flex flex-col h-full'><GeminiChat /></div>
+                case 'docs':
+                    return <div className='w-full bg-slate-950 pl-4 pr-7 pt-4 overflow-hidden flex flex-col h-full'><Docs /></div>
+                case 'stats':
+                    return <BotStats />
                 default:
                     return <div className='w-full bg-slate-950 pl-4 pr-7 pt-8 overflow-scroll overflow-scroll'>
                         <div className='text-5xl pb-8'></div>
@@ -246,11 +526,14 @@
             </div>;
         }
 
-        function App(props) {
+    function App(props) {
 
 
-            let [active, setActive] = React.useState('commands');
+            let [active, setActive] = React.useState('docs');
             let [panel_state, toggle_panel] = React.useState('visible');
+            let [panelWidth, setPanelWidth] = React.useState(384); // px, ~w-96
+            let [dragging, setDragging] = React.useState(false);
+            const minW = 200, maxW = 640;
 
 
             function handle_click() {
@@ -261,15 +544,45 @@
                 }
             }
 
+            // Resizer handlers
+            function handleMouseDown(e){
+                setDragging(true);
+            }
+            React.useEffect(()=>{
+                function onMove(e){
+                    if (!dragging) return;
+                    const newW = Math.min(maxW, Math.max(minW, e.clientX));
+                    setPanelWidth(newW);
+                }
+                function onUp(){ setDragging(false); }
+                if (dragging){
+                    window.addEventListener('mousemove', onMove);
+                    window.addEventListener('mouseup', onUp);
+                }
+                return ()=>{
+                    window.removeEventListener('mousemove', onMove);
+                    window.removeEventListener('mouseup', onUp);
+                }
+            }, [dragging]);
+
 
             let data = {
                 commands: props.commands,
                 users: props.users,
-                chat: true
+                chat: true,
+                docs: true,
+                stats: true
             }
 
             return <div className='h-screen flex'>
-                <Panel comps={data} setActive={setActive} panel={panel_state} />
+                <Panel comps={data} setActive={setActive} panel={panel_state} active={active} width={panelWidth} />
+                <div
+                    className={'h-full w-1.5 ' + (panel_state==='hidden' ? 'opacity-0 pointer-events-none' : 'opacity-100')}
+                    style={{cursor:'col-resize'}}
+                    onMouseDown={handleMouseDown}
+                >
+                    <div className='w-full h-full hover:bg-slate-700/50 transition-colors'></div>
+                </div>
                 <CloseButton toggle_panel={handle_click} />
                 <Data data={data} active={active} />
             </div>

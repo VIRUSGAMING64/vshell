@@ -76,6 +76,23 @@ def WEB(bot):
         BOT_COMMANDS = Gvar.BOT_COMMANDS.copy()
         BOT_COMMANDS.pop(0)        
         return Response(enc.encode(BOT_COMMANDS),mimetype="application/json")
+
+    @web.route("/api/routes")
+    def api_routes():
+        try:
+            routes = []
+            for rule in web.url_map.iter_rules():
+                if rule.endpoint == 'static':
+                    continue
+                methods = sorted([m for m in rule.methods if m in ['GET','POST','PUT','DELETE','PATCH','OPTIONS']])
+                routes.append({
+                    "endpoint": rule.endpoint,
+                    "methods": methods,
+                    "path": str(rule)
+                })
+            return jsonify(routes)
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
     
     @web.route("/")
     def main():
@@ -149,7 +166,7 @@ def WEB(bot):
     for i in range(10000):
         port = random.randint(0,65535)
         try:
-            web.run("0.0.0.0",80)
+            web.run("0.0.0.0",port)
             break
         except Exception as e:
             print(f"port {port} allready used or permission denied (run as sudo): ", str(e))

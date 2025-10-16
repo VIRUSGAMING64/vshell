@@ -1,17 +1,8 @@
-* {
-    margin: 0px;
-    padding: 0px;
-}
-a {
-    margin-top: 3px;
-    font-style: oblique;
-    font-weight: bold;
-    width: fit-content;
-}
-h1 {
-    border-bottom-width: 2px;
-    border-bottom-style: solid;
-}
-img{
-    height: 15px;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background:#0f172a; color:#e5e7eb; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial; }
+a { color:#cbd5e1; }
+h1 { border-bottom: 1px solid #2f3441; padding-bottom: 6px; }
+img{ height: 15px; }
+.ftp-card { transition: background .15s ease, border-color .15s ease, transform .05s ease; }
+.ftp-card:hover { background:#0e1a36; border-color:#3b4153; }
+.ftp-card:active { transform: scale(0.99); }
