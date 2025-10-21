@@ -9,3 +9,4 @@ modules/__pycache__
 .vscode/tasks.json
 bots
 creds
+test.py

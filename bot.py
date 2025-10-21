@@ -220,7 +220,7 @@ def LOG_QUEUE_HANDLER():
 def ACTIVATOR():
     while 1:
         try:
-            time.sleep(60)
+            time.sleep(40)
             req.get(Gvar.DEBUG_URL)
         except Exception as e:
             Gvar.LOG.append(str(e))

@@ -48,7 +48,17 @@
                     />
                 </div>
                 <div>
-                    <div className='w-12 h-12 bg-indigo-500 rounded-full mr-2 cursor-pointer active:scale-95 transition' role='button' aria-label='Enviar' onClick={props.handleSend}></div>
+                    <button
+                        className='w-12 h-12 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-full mr-2 cursor-pointer active:scale-95 transition flex items-center justify-center shadow-md hover:shadow-indigo-700/30'
+                        role='button'
+                        aria-label='Enviar'
+                        onClick={props.handleSend}
+                        title='Enviar'
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className='w-6 h-6'>
+                            <path d="M2.25 12l18-9-4.5 9 4.5 9-18-9zM15 12L3 6l9 6-9 6 12-6z"/>
+                        </svg>
+                    </button>
                 </div>
             </div>
         }
@@ -83,7 +93,7 @@
                 }
             }, [props.chat]);
             return <div ref={ref} className='flex-1 p-2 overflow-y-auto'>
-                {props.chat.map((message, idx) => <Message key={idx} rol={message.rol} content={message.content} type={message.type} />)}
+                {props.chat.map((message, idx) => <Message key={idx} rol={message.rol} content={message.content} type={message.type} html={message.html} />)}
             </div>
         }
 
@@ -114,6 +124,50 @@
                 return safe;
             }
 
+            async function fetchAIResponse(prompt){
+                // Intento 1: vihangayt (sin auth)
+                try {
+                    const r = await fetch(`https://vihangayt.me/tools/chatgpt?q=${encodeURIComponent(prompt)}`);
+                    if (r.ok) {
+                        const ct = r.headers.get('content-type') || '';
+                        if (ct.includes('application/json')){
+                            const j = await r.json();
+                            const txt = j.response || j.answer || j.data || j.result || '';
+                            if (String(txt).trim()) return String(txt);
+                        } else {
+                            const t = await r.text();
+                            if (String(t).trim()) return t;
+                        }
+                    }
+                } catch {}
+                // Intento 2: safone (proxy público)
+                try {
+                    const r2 = await fetch(`https://api.safone.dev/chatgpt?message=${encodeURIComponent(prompt)}`);
+                    if (r2.ok) {
+                        const j2 = await r2.json().catch(()=>null);
+                        if (j2){
+                            const txt2 = j2.response || j2.message || j2.answer || j2.content || '';
+                            if (String(txt2).trim()) return String(txt2);
+                        } else {
+                            const t2 = await r2.text();
+                            if (String(t2).trim()) return t2;
+                        }
+                    }
+                } catch {}
+                // Intento 3: DuckDuckGo Instant Answer (no IA, pero una respuesta rápida)
+                try {
+                    const r3 = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(prompt)}&format=json&no_html=1&skip_disambig=1`);
+                    if (r3.ok){
+                        const j3 = await r3.json();
+                        const abstract = j3.AbstractText || j3.Abstract || '';
+                        if (String(abstract).trim()) return abstract;
+                        const related = (j3.RelatedTopics && j3.RelatedTopics[0] && (j3.RelatedTopics[0].Text || (j3.RelatedTopics[0].Topics && j3.RelatedTopics[0].Topics[0] && j3.RelatedTopics[0].Topics[0].Text))) || '';
+                        if (String(related).trim()) return related;
+                    }
+                } catch {}
+                throw new Error('No se pudo obtener respuesta de los servicios públicos.');
+            }
+
             async function handleSend() {
                 if (loading) return;
                 if (message.split(' ').join('') !== '' && lastRol !== 'user') {
@@ -124,15 +178,7 @@
                     setLoading(true);
 
                     try {
-                        // API libre sin autenticación (intento sin credenciales)
-                        let url = `https://mapi-a2dm.onrender.com/query/?quest=${encodeURIComponent(pregunta)}`;
-                        let res = await fetch(url);
-                        if (!res.ok) {
-                            // Fallback a variante previa que incluía username/password aleatorios si fuese necesario
-                            url = `https://mapi-a2dm.onrender.com/query/?quest=${encodeURIComponent('"'+pregunta+'"')}&username=${username}&password=${password}`;
-                            res = await fetch(url);
-                        }
-                        const text = await res.text();
+                        const text = await fetchAIResponse(pregunta);
                         setChat(prev => [...prev, { rol: 'gemini', content: text, type: 'MESSAGE', html: formatLLM(text) }]);
                         setLastRol('gemini');
                     } catch (error) {
@@ -314,7 +360,6 @@
         }
 
         function UsersTab({ items }){
-            // items proviene de /api/users: diccionario id -> string (JSON serializado)
             const [q, setQ] = React.useState('');
             const rows = React.useMemo(()=>{
                 try {
