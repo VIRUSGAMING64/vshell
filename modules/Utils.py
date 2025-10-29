@@ -125,7 +125,7 @@ def __geturl(url,filename,user:t_user):
         return ret
 
 def GetParent(url):
-    """Extract filename from URL path."""
+    """Extract the last segment from a URL path or generate a null identifier."""
     if "/" in url:
         return url.rsplit('/', 1)[-1]
     else:
@@ -265,8 +265,8 @@ def VidComp(message:pyrogram.types.Message):
         os.rename(Ofile,Ifile)
     
 def NoExt(s:str):
-    """Remove file extension from filename."""
-    if '.' in s:
+    """Remove file extension from filename. Preserves files starting with dot (like .gitignore)."""
+    if '.' in s and not s.startswith('.'):
         return s.rsplit('.', 1)[0]
     return s
 
