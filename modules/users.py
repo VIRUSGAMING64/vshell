@@ -115,6 +115,7 @@ class t_user:
 
     def ls(self):
         dirs = os.listdir(self.current_dir)
+        
         dirs.sort()
         sstr = f"|{self.current_dir}|\n"
         j = 1

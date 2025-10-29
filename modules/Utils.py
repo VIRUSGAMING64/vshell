@@ -31,9 +31,12 @@ def resolve_path_from_index_or_name(path_or_index, current_dir):
         dirs = os.listdir(current_dir)
         dirs.sort()
         index = int(path_or_index) - 1
-        return current_dir + "/" + dirs[index]
+        dir =  current_dir + "/" + dirs[index]
     else:
-        return current_dir + "/" + str(path_or_index)
+        dir = current_dir + "/" + str(path_or_index)
+
+    print(f"removing directory [{dir}]")
+    return dir
 
 def prog(cant,total,prec=2,UD = "uploading"):
     per = int((cant/total)*10)
@@ -113,7 +116,7 @@ def __geturl(url,filename,user:t_user):
     try:
         Dn = uq.urlopen(url)
         D = Dn.read(1024 * 1024)
-        file = open(filename,"wb")
+        file = open(user.current_dir + "/" + filename,"wb")
         while D:
             file.write(D)
             D = Dn.read(1024 * 1024)
@@ -408,9 +411,9 @@ def remove(MSG,user:t_user):
     try:
         MSG = MSG.split(" ")[1]
         DIRECT = resolve_path_from_index_or_name(MSG, user.current_dir)
-        
+    
         if os.path.isdir(DIRECT):
-            os.removedirs(DIRECT)
+            os.rmdir(DIRECT)
         else:
             os.remove(DIRECT)
         return "removed"
