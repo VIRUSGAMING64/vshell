@@ -16,6 +16,25 @@ from modules.datatypes import *
 import modules.Gvar as Gvar
 from pyrogram.client import *
 
+def resolve_path_from_index_or_name(path_or_index, current_dir):
+    """
+    Resolves a path that can be either a numeric index or a filename.
+    
+    Args:
+        path_or_index: Either a numeric string (1-indexed) or a filename
+        current_dir: The current directory to resolve against
+    
+    Returns:
+        The resolved full path
+    """
+    if str(path_or_index).isnumeric():
+        dirs = os.listdir(current_dir)
+        dirs.sort()
+        index = int(path_or_index) - 1
+        return current_dir + "/" + dirs[index]
+    else:
+        return current_dir + "/" + str(path_or_index)
+
 def prog(cant,total,prec=2,UD = "uploading"):
     per = int((cant/total)*10)
     per2 = round((cant/total)*100)
@@ -367,13 +386,7 @@ def SendFile(user:t_user,filename,bot:Client,progress:Callable = None,args = Non
 def send_file(bot:pyrogram.client.Client,message:Message,user:t_user):
     try:
         MSG = str(message.text.split(' ',1)[1])
-        if MSG.isnumeric():
-            MSG = int(MSG)
-            dirs = os.listdir(user.current_dir)
-            dirs.sort()
-            MSG = dirs[MSG-1]
-        
-        MSG = user.current_dir + "/" + MSG
+        MSG = resolve_path_from_index_or_name(MSG, user.current_dir)
         
         if(os.path.isdir(MSG)):
             comp = Compressor(user,bot,progress)
@@ -411,16 +424,10 @@ def reset(uid):
     return res
 
 def remove(MSG,user:t_user):
-    DIRECT = ""
     try:
         MSG = MSG.split(" ")[1]
-        dirs = os.listdir(user.current_dir)
-        dirs.sort()
-        if MSG.isnumeric():
-            MSG = int(MSG)
-            DIRECT = user.current_dir+"/"+dirs[MSG-1]
-        else:
-            DIRECT = user.current_dir+'/'+MSG
+        DIRECT = resolve_path_from_index_or_name(MSG, user.current_dir)
+        
         if os.path.isdir(DIRECT):
             os.removedirs(DIRECT)
         else:

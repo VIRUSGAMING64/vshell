@@ -6,6 +6,37 @@ def debug(e):
     _debug.write(str(e) + "\n")
     _debug.close()
 
+# Helper function for common queue processing pattern
+def process_queue(queue, handler, sleep_time=0.1, handler_args_extractor=None, context_name=""):
+    """
+    Generic queue handler that processes items from a queue.
+    
+    Args:
+        queue: The queue list to process
+        handler: Function to handle each queue item
+        sleep_time: Time to sleep when queue is empty
+        handler_args_extractor: Function to extract arguments from queue item (if None, uses item directly)
+        context_name: Name for error logging context
+    """
+    while True:
+        try:
+            if len(queue) <= 0:
+                time.sleep(sleep_time)
+                continue
+            
+            item = queue[0]
+            if handler_args_extractor:
+                args = handler_args_extractor(item)
+                handler(*args)
+            else:
+                handler(item)
+        except Exception as e:
+            error_msg = str(e)
+            if context_name:
+                error_msg += f" {context_name}"
+            Gvar.LOG.append(error_msg)
+        queue.pop(0)
+
 bot = Client(
     "virusgaming",
     api_id=Gvar.API_ID,
@@ -80,30 +111,26 @@ def INLINE_REQUEST_HANDLER(client, message: InlineQuery):  # this is hard
     )
 
 def DIRECT_MESSAGE_QUEUE_HANDLER():
-    while True:
-        try:
-            if len(Gvar.QUEUE_DIRECT) <= 0:
-                time.sleep(0.1)
-                continue
-            Thread(target=DIRECT_REQUEST_HANDLER,args =[Gvar.QUEUE_DIRECT[0][CLIENT], Gvar.QUEUE_DIRECT[0][MESSAGE]],daemon=True).start()
-            """
-            Gvar.QUEUE_DIRECT[0][0] = first element in the top of queue with val: CLIENT
-            Gvar.QUEUE_DIRECT[0][1] = first element in the top of queue with val: MESSAGE
-            """
-        except Exception as e:
-            Gvar.LOG.append(str(e) + " DIRECT_MESSAGE_QUEUE_HANDLER")
-        Gvar.QUEUE_DIRECT.pop(0)
+    def handler_wrapper(item):
+        Thread(target=DIRECT_REQUEST_HANDLER, args=[item[CLIENT], item[MESSAGE]], daemon=True).start()
+    
+    process_queue(
+        Gvar.QUEUE_DIRECT, 
+        handler_wrapper,
+        sleep_time=0.1,
+        context_name="DIRECT_MESSAGE_QUEUE_HANDLER"
+    )
 
 def INLINE_MESSAGE_QUEUE_HANDLER():
-    while True:
-        try:
-            if len(Gvar.QUEUE_INLINE) == 0:
-                time.sleep(0.5)
-                continue
-            INLINE_REQUEST_HANDLER(Gvar.QUEUE_INLINE[0][0], Gvar.QUEUE_INLINE[0][1])
-        except Exception  as e:
-            Gvar.LOG.append(str(e))
-        Gvar.QUEUE_INLINE.pop(0)
+    def handler_wrapper(item):
+        INLINE_REQUEST_HANDLER(item[0], item[1])
+    
+    process_queue(
+        Gvar.QUEUE_INLINE,
+        handler_wrapper,
+        sleep_time=0.5,
+        context_name="INLINE_MESSAGE_QUEUE_HANDLER"
+    )
 
 def DOWNLOAD_MEDIA_HANDLER(data):
     msg:pyrogram.types.Message = data[0]
