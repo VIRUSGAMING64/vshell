@@ -16,6 +16,25 @@ from modules.datatypes import *
 import modules.Gvar as Gvar
 from pyrogram.client import *
 
+def resolve_path_from_index_or_name(path_or_index, current_dir):
+    """
+    Resolves a path that can be either a numeric index or a filename.
+    
+    Args:
+        path_or_index: Either a numeric string (1-indexed) or a filename
+        current_dir: The current directory to resolve against
+    
+    Returns:
+        The resolved full path
+    """
+    if str(path_or_index).isnumeric():
+        dirs = os.listdir(current_dir)
+        dirs.sort()
+        index = int(path_or_index) - 1
+        return current_dir + "/" + dirs[index]
+    else:
+        return current_dir + "/" + str(path_or_index)
+
 def prog(cant,total,prec=2,UD = "uploading"):
     per = int((cant/total)*10)
     per2 = round((cant/total)*100)
@@ -106,13 +125,9 @@ def __geturl(url,filename,user:t_user):
         return ret
 
 def GetParent(url):
-    url = list(url)
-    parent = ""
+    """Extract the last segment from a URL path or generate a null identifier."""
     if "/" in url:
-        while url[len(url)-1] != "/":
-            parent = url[len(url)-1]+parent
-            url.pop()
-        return parent 
+        return url.rsplit('/', 1)[-1]
     else:
         Gvar.nulls_parents += 1
         return f"null{Gvar.nulls_parents}"
@@ -212,10 +227,8 @@ def upd(msg:pyrogram.types.Message,Ifile,Ofile):
             print(e)
             time.sleep(1)
 
-def ffmpegW(Ifile,Ofile):
-    os.system(f'ffmpeg -i "{Ifile}" -c:v libx265 -compression_level 10 -tune "ssim" -preset "medium" "{Ofile}"')
-
-def ffmpegL(Ifile,Ofile):
+def ffmpeg_compress(Ifile,Ofile):
+    """Compress video file using ffmpeg with libx265."""
     os.system(f'ffmpeg -i "{Ifile}" -c:v libx265 -compression_level 10 -tune "ssim" -preset "medium" "{Ofile}"')
 
 def VidComp(message:pyrogram.types.Message):
@@ -246,22 +259,15 @@ def VidComp(message:pyrogram.types.Message):
         Gvar.END_THREAD = 0
         Tth=th.Thread(target=upd,args=[nms,Ifile,Ofile],daemon=True)
         Tth.start()
-        if sys.platform != "win32":
-            ffmpegW(Ifile,Ofile) 
-        else:
-            ffmpegL(Ifile,Ofile)
+        ffmpeg_compress(Ifile,Ofile)
         Gvar.END_THREAD = 1
         os.remove(Ifile)
         os.rename(Ofile,Ifile)
     
 def NoExt(s:str):
-    st = ""
-    for i in s:
-        st = i + st
-    st = st.split('.',1)[1]
-    s = ""
-    for i in st:
-        s = i + s
+    """Remove file extension from filename. Preserves files starting with dot (like .gitignore)."""
+    if '.' in s and not s.startswith('.'):
+        return s.rsplit('.', 1)[0]
     return s
 
 def AdjustSize(size:int):
@@ -310,14 +316,8 @@ def vid_down(user:t_user,msg:Message,bot:pyrogram.client.Client):
         print(e)
 
 def SetZero(i:int):
-    s = str(i)
-    if len(s) == 1:
-        s = '000'+s
-    elif len(s) == 2:
-        s = "00"+s
-    elif len(s) == 3:
-        s = "0"+s
-    return s
+    """Pad integer with zeros to make 4-digit string."""
+    return str(i).zfill(4)
 
 def Compress(filename,MAX_Z = 2000*Gvar.MB):
     id = 1
@@ -367,13 +367,7 @@ def SendFile(user:t_user,filename,bot:Client,progress:Callable = None,args = Non
 def send_file(bot:pyrogram.client.Client,message:Message,user:t_user):
     try:
         MSG = str(message.text.split(' ',1)[1])
-        if MSG.isnumeric():
-            MSG = int(MSG)
-            dirs = os.listdir(user.current_dir)
-            dirs.sort()
-            MSG = dirs[MSG-1]
-        
-        MSG = user.current_dir + "/" + MSG
+        MSG = resolve_path_from_index_or_name(MSG, user.current_dir)
         
         if(os.path.isdir(MSG)):
             comp = Compressor(user,bot,progress)
@@ -411,16 +405,10 @@ def reset(uid):
     return res
 
 def remove(MSG,user:t_user):
-    DIRECT = ""
     try:
         MSG = MSG.split(" ")[1]
-        dirs = os.listdir(user.current_dir)
-        dirs.sort()
-        if MSG.isnumeric():
-            MSG = int(MSG)
-            DIRECT = user.current_dir+"/"+dirs[MSG-1]
-        else:
-            DIRECT = user.current_dir+'/'+MSG
+        DIRECT = resolve_path_from_index_or_name(MSG, user.current_dir)
+        
         if os.path.isdir(DIRECT):
             os.removedirs(DIRECT)
         else:

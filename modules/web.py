@@ -9,6 +9,34 @@ from flask import *
 
 def WEB(bot):
     web = Flask("vshell")
+    
+    # Helper function to get MIME type based on file extension
+    def get_mime_type(filename):
+        mime_types = {
+            '.css': 'text/css',
+            '.svg': 'image/svg+xml',
+            '.js': 'application/javascript',
+            '.ts': 'application/javascript'
+        }
+        for ext, mime in mime_types.items():
+            if filename.endswith(ext):
+                return mime
+        return None
+    
+    # Helper function to clean path prefix
+    def clean_path_prefix(path, prefix="ftp"):
+        path = str(path)
+        if path.startswith(prefix):
+            path = path.removeprefix(prefix)
+        while path.startswith("/"):
+            path = path.removeprefix("/")
+        return path
+    
+    # Helper function to build href for file/folder listing
+    def build_href(prefix, base_dir, item_name):
+        if base_dir == "":
+            return f"{prefix}/{item_name}"
+        return f"{prefix}/{base_dir}/{item_name}"
 
     @web.route("/debug",methods = ['POST', 'GET'])    
     def web_debug():
@@ -105,34 +133,20 @@ def WEB(bot):
     @web.route("/ftp/<path:dir>")
     def ftp(dir):
         dir = str(dir)
-        if(dir.endswith('.css')):
-            if dir.startswith("ftp"):
-                dir.removeprefix("ftp")
-        if(dir.endswith('.css')):
-            while dir.startswith("/"):
-                dir = dir.removeprefix("/")
-            return Response(route(Gvar.FILEROOT+'/web/'+dir), mimetype='text/css')
-        
-        if(dir.endswith('.svg')):
-            if dir.startswith("ftp"):
-                dir.removeprefix("ftp")
-        if(dir.endswith('.svg')):
-            while dir.startswith("/"):
-                dir = dir.removeprefix("/")
-            return Response(route(Gvar.FILEROOT+'/web/'+dir), mimetype='image/svg+xml')
+        # Check if request is for a static file
+        mime_type = get_mime_type(dir)
+        if mime_type:
+            dir = clean_path_prefix(dir)
+            return Response(route(Gvar.FILEROOT+'/web/'+dir), mimetype=mime_type)
         
         pat = "[]//|&&&|"
         dirs = os.listdir(Gvar.FILEROOT +'/'+ dir)
         for i in range(len(dirs)):
-            if os.path.isdir(Gvar.FILEROOT+"/"+dir+f"/{dirs[i]}"):    
-                href = str("ftp/"+dir+"/"+str(dirs[i]))
-                if dir == "":
-                    href = "ftp/"+str(dirs[i])
+            if os.path.isdir(Gvar.FILEROOT+"/"+dir+f"/{dirs[i]}"):
+                href = build_href("ftp", dir, dirs[i])
                 dirs[i] = [str(dirs[i]),"folder",href]
-            else:    
-                href = str("file/"+dir+"/"+str(dirs[i]))
-                if dir == "":
-                    href = "file/"+str(dirs[i])
+            else:
+                href = build_href("file", dir, dirs[i])
                 dirs[i] = [str(dirs[i]),"file",href]
 
         webpage = open(Gvar.FILEROOT+"/templates/ftp.html","r").read(2**30)
@@ -142,12 +156,10 @@ def WEB(bot):
     @web.route("/<path:sub_path>")
     def public(sub_path):   
         sub_path = str(sub_path)
-        if (sub_path.endswith('.svg')):
-            return Response(route(Gvar.FILEROOT+'/web/'+sub_path), mimetype='image/svg+xml')
-        if(sub_path.endswith('.css')):
-            return Response(route(Gvar.FILEROOT+'/web/'+sub_path), mimetype='text/css')
-        if(sub_path.endswith('.js') or sub_path.endswith('.ts')):
-            return Response(route(Gvar.FILEROOT+'/web/'+sub_path), mimetype='application/javascript')
+        # Check if request is for a static file with specific MIME type
+        mime_type = get_mime_type(sub_path)
+        if mime_type:
+            return Response(route(Gvar.FILEROOT+'/web/'+sub_path), mimetype=mime_type)
         if(sub_path.startswith("ftp")):
             return ftp("")
         return route(Gvar.FILEROOT+'/web/'+sub_path)  
