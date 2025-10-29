@@ -125,13 +125,9 @@ def __geturl(url,filename,user:t_user):
         return ret
 
 def GetParent(url):
-    url = list(url)
-    parent = ""
+    """Extract filename from URL path."""
     if "/" in url:
-        while url[len(url)-1] != "/":
-            parent = url[len(url)-1]+parent
-            url.pop()
-        return parent 
+        return url.rsplit('/', 1)[-1]
     else:
         Gvar.nulls_parents += 1
         return f"null{Gvar.nulls_parents}"
@@ -231,10 +227,8 @@ def upd(msg:pyrogram.types.Message,Ifile,Ofile):
             print(e)
             time.sleep(1)
 
-def ffmpegW(Ifile,Ofile):
-    os.system(f'ffmpeg -i "{Ifile}" -c:v libx265 -compression_level 10 -tune "ssim" -preset "medium" "{Ofile}"')
-
-def ffmpegL(Ifile,Ofile):
+def ffmpeg_compress(Ifile,Ofile):
+    """Compress video file using ffmpeg with libx265."""
     os.system(f'ffmpeg -i "{Ifile}" -c:v libx265 -compression_level 10 -tune "ssim" -preset "medium" "{Ofile}"')
 
 def VidComp(message:pyrogram.types.Message):
@@ -265,22 +259,15 @@ def VidComp(message:pyrogram.types.Message):
         Gvar.END_THREAD = 0
         Tth=th.Thread(target=upd,args=[nms,Ifile,Ofile],daemon=True)
         Tth.start()
-        if sys.platform != "win32":
-            ffmpegW(Ifile,Ofile) 
-        else:
-            ffmpegL(Ifile,Ofile)
+        ffmpeg_compress(Ifile,Ofile)
         Gvar.END_THREAD = 1
         os.remove(Ifile)
         os.rename(Ofile,Ifile)
     
 def NoExt(s:str):
-    st = ""
-    for i in s:
-        st = i + st
-    st = st.split('.',1)[1]
-    s = ""
-    for i in st:
-        s = i + s
+    """Remove file extension from filename."""
+    if '.' in s:
+        return s.rsplit('.', 1)[0]
     return s
 
 def AdjustSize(size:int):
@@ -329,14 +316,8 @@ def vid_down(user:t_user,msg:Message,bot:pyrogram.client.Client):
         print(e)
 
 def SetZero(i:int):
-    s = str(i)
-    if len(s) == 1:
-        s = '000'+s
-    elif len(s) == 2:
-        s = "00"+s
-    elif len(s) == 3:
-        s = "0"+s
-    return s
+    """Pad integer with zeros to make 4-digit string."""
+    return str(i).zfill(4)
 
 def Compress(filename,MAX_Z = 2000*Gvar.MB):
     id = 1
