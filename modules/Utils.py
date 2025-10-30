@@ -1,20 +1,20 @@
 import urllib.request as uq
-import sys
 import os
-from modules.VidDown import *
-from modules.users import *
+from modules.VidDown import VidDownloader
+from modules.users import t_user
 from modules.compressor import Compressor
-from math import *
-from modules.pool import *
-from pyrogram.emoji import *
-from pyrogram.types import *
+from math import floor
+from modules.pool import v_Timer
+from pyrogram.emoji import RED_CIRCLE, ORANGE_CIRCLE, GREEN_CIRCLE, WHITE_CIRCLE, FILE_FOLDER, PAGE_FACING_UP, LINK
+from pyrogram.types import Message
 import threading as th
 import psutil as st
 import time
 import requests as rq
-from modules.datatypes import *
+from modules.datatypes import INVALID
 import modules.Gvar as Gvar
-from pyrogram.client import *
+from pyrogram.client import Client
+from typing import Callable
 
 def resolve_path_from_index_or_name(path_or_index, current_dir):
     """
@@ -99,7 +99,7 @@ def round(fl:float,prec:int=2):
         r=r.split('.')
         r[0] += "."    
         if 'e' in r[1]:
-            temp = str(cp(r[1]))
+            temp = str(r[1])
             temp = temp.split('e')
             e = 'e'+temp[len(temp)-1]
         for i in range(prec):
@@ -159,11 +159,9 @@ def geturl(user:t_user, msg: str):
             Gvar.LOG.append(str(e) +" "+ str(user.id))
             return "incorrect link and filename format"   
 
-def cp(a):
-    return a
-
 def uptime():
-    seconds_uptime = round(cp(Gvar.UPTIME)) 
+    """Calculate and format bot uptime."""
+    seconds_uptime = round(Gvar.UPTIME) 
     minutes_uptime = round(seconds_uptime // 60)
     hours_uptime = round(minutes_uptime // 60)
     days_uptime = round(hours_uptime // 24)
@@ -427,45 +425,113 @@ def ClearCommand(command:str):
         command.append(None)
     return command
 
-def USER_PROCCESS(user:t_user, message: Message,bot:pyrogram.client.Client):
+def handle_video_download(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+    """Handle video download from URL."""
+    Gvar.FUNC_QUEUE.append([vid_down, [user, message, bot]])
+    return None
+
+def handle_compress(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+    """Handle video compression."""
+    tth = th.Thread(target=VidComp, args=[message], daemon=True)
+    tth.start()
+    return "in progress"
+
+def handle_help(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+    """Return help information."""
+    return Gvar.HELP
+
+def handle_dir(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+    """Return current directory."""
+    return user.current_dir
+
+def handle_queues(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+    """Return queue status."""
+    return queuesZ()
+
+def handle_size(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+    """Return file/directory size."""
+    return user.size(command)
+
+def handle_list(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+    """List directory contents."""
+    return user.ls()
+
+def handle_restart(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+    """Restart the bot (admin only)."""
+    return reset(message.from_user.id)
+
+def handle_cd(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+    """Change directory."""
+    user.chdir(command)
+    return "Changed !!!"
+
+def handle_mkdir(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+    """Create new directory."""
+    user.mkdir(command)
+    return "Created !!!"
+
+def handle_geturl(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+    """Download file from URL."""
+    return geturl(user, message.text)
+
+def handle_stats(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+    """Return system statistics."""
+    return stats()
+
+def handle_link(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+    """Generate direct link."""
+    return GenerateDirectLink(message)
+
+def handle_eval(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+    """Execute Python code (admin only)."""
+    if message.from_user.id in Gvar.ADMINS:
+        exec(command)
+    return None
+
+def handle_send(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+    """Send file."""
+    return send_file(bot, message, user)
+
+def handle_remove(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+    """Remove file or directory."""
+    return remove(str(message.text), user)
+
+# Command handler mapping
+COMMAND_HANDLERS = {
+    '/comp': handle_compress,
+    '/help': handle_help,
+    '/dir': handle_dir,
+    '/queues': handle_queues,
+    '/sz': handle_size,
+    '/ls': handle_list,
+    '/restart': handle_restart,
+    '/cd': handle_cd,
+    '/mkdir': handle_mkdir,
+    '/geturl': handle_geturl,
+    '/stats': handle_stats,
+    '/link': handle_link,
+    '/eval': handle_eval,
+    '/send': handle_send,
+    '/rm': handle_remove,
+}
+
+def USER_PROCCESS(user: t_user, message: Message, bot: pyrogram.client.Client):
+    """
+    Process user commands. Refactored to use command handler mapping.
+    """
     MSG = str(message.text)
     command = ClearCommand(MSG)[1]
+    
+    # Handle video downloads from URLs
     if MSG.startswith("http"):
-        Gvar.FUNC_QUEUE.append([vid_down,[user,message,bot]])
-    elif MSG.startswith("/comp"):
-        tth=th.Thread(target=VidComp,args=[message],daemon=True)
-        tth.start()
-        return "in progress"
-    elif MSG.startswith("/help"):
-        return Gvar.HELP
-    elif MSG.startswith("/dir"):
-        return user.current_dir
-    elif MSG.startswith("/queues"):
-        return queuesZ()
-    elif MSG.startswith("/sz"):
-        return user.size(command)
-    elif MSG.startswith("/ls"):
-        return user.ls()
-    elif MSG.startswith("/restart") :
-        return reset(message.from_user.id)
-    elif MSG.startswith("/cd"):
-        user.chdir(command)
-        return "Changed !!!"
-    elif MSG.startswith("/mkdir"):
-        user.mkdir(command)
-        return "Created !!!"
-    elif MSG.startswith("/geturl"):
-        return geturl(user,message.text)
-    elif MSG.startswith('/stats'):
-        return stats()
-    elif MSG.startswith("/link"):
-        return GenerateDirectLink(message)
-    elif MSG.startswith("/eval") and message.from_user.id in Gvar.ADMINS:
-        exec(command)
-    elif MSG.startswith('/send'):
-        return send_file(bot,message,user)
-    elif MSG.startswith("/rm"):
-        return remove(MSG,user)
+        return handle_video_download(user, message, bot, command)
+    
+    # Find and execute command handler
+    for cmd_prefix, handler in COMMAND_HANDLERS.items():
+        if MSG.startswith(cmd_prefix):
+            return handler(user, message, bot, command)
+    
+    # Return 0 if no command matches
     return 0
 
 def UPD_HOUR():
