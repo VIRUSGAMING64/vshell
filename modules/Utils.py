@@ -355,15 +355,25 @@ def SendFile(user:t_user,filename,bot:Bot,progress:Callable = None,args = None,t
             files = Compress(filename)
         file:str = ""
         for file in files:
-            with open(file, 'rb') as f:
-                if file.endswith(".mp4") or file.endswith(".mpg") or file.endswith('.mkv'):
-                    bot.send_video(chat_id=user.chat, video=f, caption=text, thumbnail=open(thumb, 'rb') if thumb else None)
-                elif file.endswith(".jpg") or file.endswith(".png"):
-                    bot.send_photo(chat_id=user.chat, photo=f, caption=text)
-                else:
-                    bot.send_document(chat_id=user.chat, document=f, caption=text, thumbnail=open(thumb, 'rb') if thumb else None)
-            bot.delete_message(chat_id=user.chat, message_id=user.download_id)
-            user.download_id = -1
+            thumb_file = None
+            if thumb and os.path.exists(thumb):
+                thumb_file = open(thumb, 'rb')
+            
+            try:
+                with open(file, 'rb') as f:
+                    if file.endswith(".mp4") or file.endswith(".mpg") or file.endswith('.mkv'):
+                        bot.send_video(chat_id=user.chat, video=f, caption=text, thumbnail=thumb_file)
+                    elif file.endswith(".jpg") or file.endswith(".png"):
+                        bot.send_photo(chat_id=user.chat, photo=f, caption=text)
+                    else:
+                        bot.send_document(chat_id=user.chat, document=f, caption=text, thumbnail=thumb_file)
+            finally:
+                if thumb_file:
+                    thumb_file.close()
+            
+            if user.download_id != -1:
+                bot.delete_message(chat_id=user.chat, message_id=user.download_id)
+                user.download_id = -1
     except Exception as e:
         Gvar.LOG.append(str(e))
         print(str(e))

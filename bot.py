@@ -136,30 +136,33 @@ def DOWNLOAD_MEDIA_HANDLER(data):
     
     if has_media:
         try:
-            # Download file based on media type
+            # Get the file object based on media type
+            file_obj = None
             if msg.photo:
-                file = msg.photo[-1].get_file()
+                file_obj = bot.get_file(msg.photo[-1].file_id)
             elif msg.video:
-                file = msg.video.get_file()
+                file_obj = bot.get_file(msg.video.file_id)
             elif msg.document:
-                file = msg.document.get_file()
+                file_obj = bot.get_file(msg.document.file_id)
             elif msg.audio:
-                file = msg.audio.get_file()
+                file_obj = bot.get_file(msg.audio.file_id)
             elif msg.voice:
-                file = msg.voice.get_file()
-            else:
-                return
+                file_obj = bot.get_file(msg.voice.file_id)
             
-            # Download to user's directory
-            file.download(custom_path=user.current_dir+"/")
-            bot.delete_message(chat_id=user.chat, message_id=user.download_id)
-            user.download_id = -1
-            msg.reply_text("Downloaded !!!!", reply_to_message_id=msg.message_id)
-            time.sleep(60)
+            if file_obj:
+                # Download to user's directory
+                file_obj.download_to_drive(custom_path=user.current_dir+"/")
+                bot.delete_message(chat_id=user.chat, message_id=user.download_id)
+                user.download_id = -1
+                msg.reply_text("Downloaded !!!!", reply_to_message_id=msg.message_id)
+                time.sleep(60)
         except Exception as e:
             debug(e)
             print("in downloads first try")
-            msg.reply_text("Error downloading media")
+            try:
+                msg.reply_text("Error downloading media")
+            except:
+                pass
         finally:
             user.download_id = -1
     
