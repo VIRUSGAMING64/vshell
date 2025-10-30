@@ -1,5 +1,6 @@
 import urllib.request as uq
 import os
+import pyrogram
 from modules.VidDown import VidDownloader
 from modules.users import t_user
 from modules.compressor import Compressor
