@@ -55,7 +55,7 @@ class VidDownloader:
                 ydl.download([url])
             except Exception as e:
                 Gvar.LOG.append(str(e)+ " " + str(self.user.id))
-                self.bot.edit_message_text(chat_id=self.chat_id, message_id=self.user.download_id, text="unknow error\n"+str(e))
+                self.bot.edit_message_text(chat_id=self.chat_id, message_id=self.user.download_id, text="unknown error\n"+str(e))
                 time.sleep(60)
             finally:
                 self.bot.delete_message(chat_id=self.user.chat, message_id=self.user.download_id)

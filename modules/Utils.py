@@ -81,7 +81,6 @@ def progress(cant, total,user:t_user,bot:Bot,UD = "uploading",reply_to = None):
         user.download_id = msg.message_id
     else:
         bot.edit_message_text(chat_id=user.chat, message_id=user.download_id, text=cant)
-        user.download_id = user.download_id
 
 def GenerateDirectLink(message:Message):
     """Generate a direct download link for a file."""

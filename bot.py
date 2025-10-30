@@ -138,20 +138,27 @@ def DOWNLOAD_MEDIA_HANDLER(data):
         try:
             # Get the file object based on media type
             file_obj = None
+            filename = "file"
             if msg.photo:
                 file_obj = bot.get_file(msg.photo[-1].file_id)
+                filename = f"photo_{msg.photo[-1].file_id}.jpg"
             elif msg.video:
                 file_obj = bot.get_file(msg.video.file_id)
+                filename = msg.video.file_name or f"video_{msg.video.file_id}.mp4"
             elif msg.document:
                 file_obj = bot.get_file(msg.document.file_id)
+                filename = msg.document.file_name or f"document_{msg.document.file_id}"
             elif msg.audio:
                 file_obj = bot.get_file(msg.audio.file_id)
+                filename = msg.audio.file_name or f"audio_{msg.audio.file_id}.mp3"
             elif msg.voice:
                 file_obj = bot.get_file(msg.voice.file_id)
+                filename = f"voice_{msg.voice.file_id}.ogg"
             
             if file_obj:
                 # Download to user's directory
-                file_obj.download_to_drive(custom_path=user.current_dir+"/")
+                download_path = os.path.join(user.current_dir, filename)
+                file_obj.download_to_drive(download_path)
                 bot.delete_message(chat_id=user.chat, message_id=user.download_id)
                 user.download_id = -1
                 msg.reply_text("Downloaded !!!!", reply_to_message_id=msg.message_id)
@@ -277,8 +284,8 @@ def ACTIVATOR():
 # Register handlers
 application.add_handler(InlineQueryHandler(INLINE_REQUEST_HANDLER))
 application.add_handler(MessageHandler(filters.ChatType.PRIVATE & filters.TEXT & ~filters.COMMAND, on_private_message))
-application.add_handler(MessageHandler(filters.ChatType.GROUPS & filters.TEXT, on_group_message))
-application.add_handler(MessageHandler(filters.UpdateType.EDITED_MESSAGE & filters.ChatType.PRIVATE, on_edit_private_message))
+application.add_handler(MessageHandler(filters.ChatType.GROUP & filters.TEXT, on_group_message))
+application.add_handler(MessageHandler(filters.UpdateType.EDITED & filters.ChatType.PRIVATE & filters.TEXT, on_edit_private_message))
 application.add_handler(CommandHandler("start", on_private_message))
 
 pool = v_pool(
