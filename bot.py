@@ -37,45 +37,46 @@ def process_queue(queue, handler, sleep_time=0.1, handler_args_extractor=None, c
             Gvar.LOG.append(error_msg)
         queue.pop(0)
 
-bot = Client(
-    "virusgaming",
-    api_id=Gvar.API_ID,
-    api_hash=Gvar.API_HASH,
-    workers=Gvar.WORKERS,
-    bot_token=Gvar.TOKEN
-)
+# Create the Application with token
+application = Application.builder().token(Gvar.TOKEN).build()
+bot = application.bot
 
-def DIRECT_REQUEST_HANDLER(client: Client, message: Message):
+def DIRECT_REQUEST_HANDLER(bot_instance: Bot, message: Message):
     if message == None:
         return
     temp_user = GetUser(message)
     Gvar.QUEUE_DOWNLOAD.append([message,temp_user])
-    data = Utils.USER_PROCCESS(temp_user,message,bot)
+    data = Utils.USER_PROCCESS(temp_user,message,bot_instance)
     if data == 0:
-        DIRECT_REQUEST_HANDLER(client,message.reply_to_message)
+        if message.reply_to_message:
+            DIRECT_REQUEST_HANDLER(bot_instance, message.reply_to_message)
         return
     try:
-        mes = message.reply(str(data))
+        message.reply_text(str(data))
     except Exception as e:
         Gvar.LOG.append(str(e))
 
-def INLINE_REQUEST_HANDLER(client, message: InlineQuery):
+async def INLINE_REQUEST_HANDLER(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle inline queries for stats and queues."""
-    query = message.query
+    query = update.inline_query.query
     text = 'not implementated'
     results = []
-    if message.query.startswith("/") == False:
+    
+    if not query.startswith("/"):
         results.append(
-        InlineQueryResultArticle(
-            title="gemini-AI",
-            description=text[0:15]+"...",
-            input_message_content=InputTextMessageContent(
-                message_text=text
-            ),               
-        ))
-    if message.query.startswith("/stats"):
+            InlineQueryResultArticle(
+                id="1",
+                title="gemini-AI",
+                description=text[0:15]+"...",
+                input_message_content=InputTextMessageContent(
+                    message_text=text
+                ),               
+            ))
+    
+    if query.startswith("/stats"):
         results.append(
-        InlineQueryResultArticle(
+            InlineQueryResultArticle(
+                id="2",
                 title="stats",
                 description=Utils.stats()[0:20]+"...",
                 input_message_content=InputTextMessageContent(
@@ -84,9 +85,10 @@ def INLINE_REQUEST_HANDLER(client, message: InlineQuery):
             )
         )
     
-    if message.query.startswith("/queues"):
+    if query.startswith("/queues"):
         results.append(
-        InlineQueryResultArticle(
+            InlineQueryResultArticle(
+                id="3",
                 title="queues",
                 description=Utils.queuesZ()[0:20]+"...",
                 input_message_content=InputTextMessageContent(
@@ -95,14 +97,14 @@ def INLINE_REQUEST_HANDLER(client, message: InlineQuery):
             )
         )
 
-    asw = message.answer(
+    await update.inline_query.answer(
         results=results,
         cache_time=1000
     )
 
 def DIRECT_MESSAGE_QUEUE_HANDLER():
     def handler_wrapper(item):
-        Thread(target=DIRECT_REQUEST_HANDLER, args=[item[CLIENT], item[MESSAGE]], daemon=True).start()
+        Thread(target=DIRECT_REQUEST_HANDLER, args=[item['bot'], item['message']], daemon=True).start()
     
     process_queue(
         Gvar.QUEUE_DIRECT, 
@@ -113,7 +115,8 @@ def DIRECT_MESSAGE_QUEUE_HANDLER():
 
 def INLINE_MESSAGE_QUEUE_HANDLER():
     def handler_wrapper(item):
-        INLINE_REQUEST_HANDLER(item[0], item[1])
+        # For PTB inline queries are handled differently - through async handlers
+        pass
     
     process_queue(
         Gvar.QUEUE_INLINE,
@@ -123,21 +126,40 @@ def INLINE_MESSAGE_QUEUE_HANDLER():
     )
 
 def DOWNLOAD_MEDIA_HANDLER(data):
-    msg:pyrogram.types.Message = data[0]
+    msg:Message = data[0]
     user: t_user = data[1]
     if user.download_id != -1:
         return INVALID
-    if msg.media != None:
+    
+    # PTB handles media differently - check for photo, video, document, etc.
+    has_media = msg.photo or msg.video or msg.document or msg.audio or msg.voice
+    
+    if has_media:
         try:
-            bot.download_media(msg,user.current_dir+"/",progress=Utils.progress,progress_args=tuple([user,bot,"downloading",msg.id]))
-            bot.delete_messages(user.chat,user.download_id)
+            # Download file based on media type
+            if msg.photo:
+                file = msg.photo[-1].get_file()
+            elif msg.video:
+                file = msg.video.get_file()
+            elif msg.document:
+                file = msg.document.get_file()
+            elif msg.audio:
+                file = msg.audio.get_file()
+            elif msg.voice:
+                file = msg.voice.get_file()
+            else:
+                return
+            
+            # Download to user's directory
+            file.download(custom_path=user.current_dir+"/")
+            bot.delete_message(chat_id=user.chat, message_id=user.download_id)
             user.download_id = -1
-            msg.reply("Downloaded !!!!",reply_to_message_id=msg.id)
+            msg.reply_text("Downloaded !!!!", reply_to_message_id=msg.message_id)
             time.sleep(60)
         except Exception as e:
             debug(e)
             print("in downloads first try")
-            msg.reply("Error downloading media")
+            msg.reply_text("Error downloading media")
         finally:
             user.download_id = -1
     
@@ -163,35 +185,44 @@ def DOWNLOAD_QUEUE_HANDLER():
         Thread(target=HANDLER).start()
         time.sleep(1)
 
-@bot.on_inline_query()
-async def on_inline_query(client: Client, message: Message):
-    Gvar.QUEUE_INLINE.append([client, message])
-
-@bot.on_message(filters.private)
-async def on_private_message(client: Client, message: Message):
-    if message.from_user.phone_number in Gvar.MUTED_USERS:
+async def on_private_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    message = update.message
+    if not message:
         return
-    if message.text == '/start':
-        await message.reply("BOT ONLINE")
-        return
-    Gvar.QUEUE_DIRECT.append([client, message])
-
-@bot.on_message(filters.group)
-async def on_group_message(client: Client, message: Message):
-    if message.from_user.phone_number in Gvar.MUTED_USERS:
+    
+    # Check if user is muted (using user_id instead of phone_number as PTB doesn't expose phone)
+    if message.from_user.id in Gvar.MUTED_USERS:
         return
     
     if message.text == '/start':
-        await message.reply("BOT ONLINE")
+        await message.reply_text("BOT ONLINE")
+        return
+    
+    Gvar.QUEUE_DIRECT.append({'bot': bot, 'message': message})
+
+async def on_group_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    message = update.message
+    if not message:
+        return
+    
+    # Check if user is muted
+    if message.from_user.id in Gvar.MUTED_USERS:
+        return
+    
+    if message.text == '/start':
+        await message.reply_text("BOT ONLINE")
         Gvar.DEBUG_GROUP_ID = message.chat.id
         return        
 
-    if message.mentioned:
-        await on_private_message(client,message)
+    # Check if bot is mentioned (PTB doesn't have 'mentioned' directly, need to check entities)
+    if message.entities:
+        for entity in message.entities:
+            if entity.type == MessageEntityType.MENTION:
+                await on_private_message(update, context)
+                return
 
-@bot.on_edited_message(filters.private)
-async def on_edit_private_message(client, message:Message):
-    await on_private_message(client, message)
+async def on_edit_private_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await on_private_message(update, context)
 
 def TO_SEND_QUEUE_HANDLER(): 
     while 1:
@@ -202,7 +233,7 @@ def TO_SEND_QUEUE_HANDLER():
             data = Gvar.QUEUE_TO_SEND[0]
             Gvar.QUEUE_TO_SEND.pop(0)
             for text in data[1]:
-                data[0].reply(text)
+                data[0].reply_text(text)
                 time.sleep(1.5)
         except Exception as e:
             Gvar.LOG.append(str(e))
@@ -216,7 +247,7 @@ def INIT():
     try:
         time.sleep(35)
         for admin_id in Gvar.ADMINS:
-            bot.send_message(admin_id, "bot online")
+            bot.send_message(chat_id=admin_id, text="bot online")
     except Exception as e:
         Gvar.LOG.append(str(e))
 
@@ -225,12 +256,11 @@ def LOG_QUEUE_HANDLER():
     while 1:
         try:
             if len(Gvar.LOG) != 0:
-                mes=bot.send_message(Gvar.DEBUG_GROUP_ID,Gvar.LOG[0])
+                bot.send_message(chat_id=Gvar.DEBUG_GROUP_ID, text=Gvar.LOG[0])
                 Gvar.LOG.pop(0)
             time.sleep(3)
         except Exception as e:
             print(str(e))     
-            #Gvar.LOG.append(str(e))
 
 def ACTIVATOR():
     while 1:
@@ -240,6 +270,13 @@ def ACTIVATOR():
         except Exception as e:
             Gvar.LOG.append(str(e))
             print(str(e))
+
+# Register handlers
+application.add_handler(InlineQueryHandler(INLINE_REQUEST_HANDLER))
+application.add_handler(MessageHandler(filters.ChatType.PRIVATE & filters.TEXT & ~filters.COMMAND, on_private_message))
+application.add_handler(MessageHandler(filters.ChatType.GROUPS & filters.TEXT, on_group_message))
+application.add_handler(MessageHandler(filters.UpdateType.EDITED_MESSAGE & filters.ChatType.PRIVATE, on_edit_private_message))
+application.add_handler(CommandHandler("start", on_private_message))
 
 pool = v_pool(
     [
@@ -256,5 +293,7 @@ pool = v_pool(
 )
 
 pool.start_all(1)
-print("THREADS STARTEDS")
-bot.run()
+print("THREADS STARTED")
+
+# Run the bot with polling
+application.run_polling(allowed_updates=Update.ALL_TYPES)

@@ -1,14 +1,13 @@
 import yt_dlp
 import time
-from pyrogram.types import *
-from pyrogram.client import *
+from telegram import Bot
 import modules.Gvar as Gvar
 from modules.users import t_user
 
 class VidDownloader:
     file = ""
     arg = "downloading video"
-    def __init__(self, bot:Client,user,chat_id,progress:callable,args:list):
+    def __init__(self, bot:Bot,user,chat_id,progress:callable,args:list):
         self.bot = bot
         self.progress = progress
         self.args = args
@@ -41,7 +40,8 @@ class VidDownloader:
             Gvar.LOG.append(str(e))
 
     def download_video(self, url):
-        self.user.download_id = self.bot.send_message(self.user.chat,"downloading").id
+        msg = self.bot.send_message(chat_id=self.user.chat, text="downloading")
+        self.user.download_id = msg.message_id
         ydl_opts = {
             "paths":{
                 "home":self.user.current_dir
@@ -55,8 +55,8 @@ class VidDownloader:
                 ydl.download([url])
             except Exception as e:
                 Gvar.LOG.append(str(e)+ " " + str(self.user.id))
-                self.bot.edit_message_text(self.chat_id,self.user.download_id,"unknow error\n"+str(e))
+                self.bot.edit_message_text(chat_id=self.chat_id, message_id=self.user.download_id, text="unknow error\n"+str(e))
                 time.sleep(60)
             finally:
-                self.bot.delete_messages(self.user.chat,self.user.download_id)
+                self.bot.delete_message(chat_id=self.user.chat, message_id=self.user.download_id)
                 self.user.download_id = -1

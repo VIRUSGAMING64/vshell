@@ -1,9 +1,7 @@
 requests
-pyrogram   
-python-telegram-bot
+python-telegram-bot[job-queue]
 asyncio
 psutil
 flask 
 yt_dlp
 regex
-tgcrypto

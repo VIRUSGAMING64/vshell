@@ -46,14 +46,16 @@ def WEB(bot):
             else:
                 Gvar.GET_QUERYS+=1
                 if __name__ != "__main__":        
-                    while bot.is_connected == None:
-                        time.sleep(1)
-                    bot.send_message(Gvar.DEBUG_GROUP_ID,f"GET: {Gvar.GET_QUERYS} POST: {Gvar.POST_QUERYS}\n"+Utils.stats())
+                    # PTB doesn't have is_connected, just attempt to send
+                    try:
+                        bot.send_message(chat_id=Gvar.DEBUG_GROUP_ID, text=f"GET: {Gvar.GET_QUERYS} POST: {Gvar.POST_QUERYS}\n"+Utils.stats())
+                    except Exception as e:
+                        print(f"Bot not ready: {e}")
                     
             return open(Gvar.FILEROOT+"/web/index.html","rb").read(2**31)        
         except Exception as e:
             for i in Gvar.ADMINS:
-                bot.send_message(i,str(e))
+                bot.send_message(chat_id=i, text=str(e))
         return "nothing"
     
     @web.route("/api/users")

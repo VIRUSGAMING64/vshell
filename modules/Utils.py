@@ -1,20 +1,18 @@
 import urllib.request as uq
 import os
-import pyrogram
+from telegram import Message, Bot
 from modules.VidDown import VidDownloader
 from modules.users import t_user
 from modules.compressor import Compressor
 from math import floor
 from modules.pool import v_Timer
-from pyrogram.emoji import RED_CIRCLE, ORANGE_CIRCLE, GREEN_CIRCLE, WHITE_CIRCLE, FILE_FOLDER, PAGE_FACING_UP, LINK
-from pyrogram.types import Message
+from telegram.constants import MessageEntityType
 import threading as th
 import psutil as st
 import time
 import requests as rq
 from modules.datatypes import INVALID
 import modules.Gvar as Gvar
-from pyrogram.client import Client
 from typing import Callable
 
 def resolve_path_from_index_or_name(path_or_index, current_dir):
@@ -45,13 +43,14 @@ def prog(cant,total,prec=2,UD = "uploading"):
     res = 10-per
     s = f"PERCENT: {per2}%\n"
     s += f"{UD} {round(cant/(1024**2),prec)}MB of {round(total/(1024**2),prec)}MB\n"
+    # Using Unicode emojis directly
     if per2 <= 33.333:
-        s += f"{pyrogram.emoji.RED_CIRCLE}"*per
+        s += "🔴"*per
     elif per2 <= 80.0:
-        s += f"{pyrogram.emoji.ORANGE_CIRCLE}"*per
+        s += "🟠"*per
     else:
-        s += f"{pyrogram.emoji.GREEN_CIRCLE}"*per
-    s += f"{pyrogram.emoji.WHITE_CIRCLE}"*res
+        s += "🟢"*per
+    s += "⚪"*res
     s += "\nBOT_UPTIME: "+uptime()
     return s
 
@@ -67,7 +66,7 @@ def get_speed(cant:int,user:t_user):
     user.bytes_transmited = cant
     return round(mb_in_time)
 
-def progress(cant, total,user:t_user,bot:Client,UD = "uploading",reply_to = None):
+def progress(cant, total,user:t_user,bot:Bot,UD = "uploading",reply_to = None):
     global last_time_progress_excecution
     actual_time = time.time_ns()
     UD += f"\n{get_speed(cant,user)}MB/S\nDOWNLOAD_ID:{str(reply_to)}\n"
@@ -78,9 +77,11 @@ def progress(cant, total,user:t_user,bot:Client,UD = "uploading",reply_to = None
     cant = prog(cant,total,UD=UD)
     if user.download_id == -1:
         user.last_edit_time = time.time_ns()
-        user.download_id = bot.send_message(user.chat,cant,reply_to_message_id=reply_to).id
+        msg = bot.send_message(chat_id=user.chat, text=cant, reply_to_message_id=reply_to)
+        user.download_id = msg.message_id
     else:
-        user.download_id = bot.edit_message_text(user.chat,user.download_id,cant).id
+        bot.edit_message_text(chat_id=user.chat, message_id=user.download_id, text=cant)
+        user.download_id = user.download_id
 
 def GenerateDirectLink(message:Message):
     """Generate a direct download link for a file."""
@@ -213,7 +214,7 @@ def stats():
     s += f"DISK FREE: {DISK_FREE}GB\n"
     return s
 
-def upd(msg:pyrogram.types.Message,Ifile,Ofile):
+def upd(msg:Message,Ifile,Ofile):
     time.sleep(1)
     while 1:
         time.sleep(1)
@@ -224,7 +225,7 @@ def upd(msg:pyrogram.types.Message,Ifile,Ofile):
             curr=os.path.getsize(Ofile)
             s=prog(curr,total,10,"compressing")
             if s != msg.text:
-                msg=msg.edit_text(s)
+                msg.edit_text(s)
             time.sleep(1)
         except Exception as e:
             print(e)
@@ -234,7 +235,7 @@ def ffmpeg_compress(Ifile,Ofile):
     """Compress video file using ffmpeg with libx265."""
     os.system(f'ffmpeg -i "{Ifile}" -c:v libx265 -compression_level 10 -tune "ssim" -preset "medium" "{Ofile}"')
 
-def VidComp(message:pyrogram.types.Message):
+def VidComp(message:Message):
     try:
         msg = message.text.split(" ")
         Ifile = msg[1]
@@ -256,7 +257,7 @@ def VidComp(message:pyrogram.types.Message):
         return "Ofile already exist"
     except:
         pass
-    nms = message.reply("compressing...")
+    nms = message.reply_text("compressing...")
     while NoPass > 0:
         NoPass -= 1
         Gvar.END_THREAD = 0
@@ -286,7 +287,7 @@ def AdjustSize(size:int):
     return str(size) + "B"
     pass
 
-def vid_down(user:t_user,msg:Message,bot:pyrogram.client.Client):
+def vid_down(user:t_user,msg:Message,bot:Bot):
     try:
         do = VidDownloader(bot,user,user.chat,progress,[user,bot,"downloading video..."])
         link = msg.text
@@ -314,7 +315,7 @@ def vid_down(user:t_user,msg:Message,bot:pyrogram.client.Client):
         if(size != -1):
             os.remove(thumb)
     except Exception as e:
-        msg.reply(str(e))
+        msg.reply_text(str(e))
         Gvar.LOG.append(str(e))
         print(e)
 
@@ -343,7 +344,7 @@ def Compress(filename,MAX_Z = 2000*Gvar.MB):
     file.close()
     return files
 
-def SendFile(user:t_user,filename,bot:Client,progress:Callable = None,args = None,thumb = None,text = ""):
+def SendFile(user:t_user,filename,bot:Bot,progress:Callable = None,args = None,thumb = None,text = ""):
     try:
         if os.path.isdir(filename):
             comp = Compressor(user,bot,progress)
@@ -354,20 +355,21 @@ def SendFile(user:t_user,filename,bot:Client,progress:Callable = None,args = Non
             files = Compress(filename)
         file:str = ""
         for file in files:
-            if file.endswith(".mp4") or file.endswith(".mpg") or file.endswith('.mkv'):
-                bot.send_video(user.chat,file,progress=progress,progress_args=args,thumb=thumb,caption=text)
-            elif file.endswith(".jpg") or file.endswith(".png"):
-                bot.send_photo(user.chat,file,progress=progress,progress_args=args,thumb=thumb,caption=text)
-            else:
-                bot.send_document(user.chat,file,progress=progress,progress_args=args,thumb=thumb,caption=text)
-            bot.delete_messages(user.chat,user.download_id)
+            with open(file, 'rb') as f:
+                if file.endswith(".mp4") or file.endswith(".mpg") or file.endswith('.mkv'):
+                    bot.send_video(chat_id=user.chat, video=f, caption=text, thumbnail=open(thumb, 'rb') if thumb else None)
+                elif file.endswith(".jpg") or file.endswith(".png"):
+                    bot.send_photo(chat_id=user.chat, photo=f, caption=text)
+                else:
+                    bot.send_document(chat_id=user.chat, document=f, caption=text, thumbnail=open(thumb, 'rb') if thumb else None)
+            bot.delete_message(chat_id=user.chat, message_id=user.download_id)
             user.download_id = -1
     except Exception as e:
         Gvar.LOG.append(str(e))
         print(str(e))
         return str(e)
 
-def send_file(bot:pyrogram.client.Client,message:Message,user:t_user):
+def send_file(bot:Bot,message:Message,user:t_user):
     try:
         MSG = str(message.text.split(' ',1)[1])
         MSG = resolve_path_from_index_or_name(MSG, user.current_dir)
@@ -427,74 +429,74 @@ def ClearCommand(command:str):
         command.append(None)
     return command
 
-def handle_video_download(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+def handle_video_download(user: t_user, message: Message, bot: Bot, command: str):
     """Handle video download from URL."""
     Gvar.FUNC_QUEUE.append([vid_down, [user, message, bot]])
     return None
 
-def handle_compress(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+def handle_compress(user: t_user, message: Message, bot: Bot, command: str):
     """Handle video compression."""
     tth = th.Thread(target=VidComp, args=[message], daemon=True)
     tth.start()
     return "in progress"
 
-def handle_help(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+def handle_help(user: t_user, message: Message, bot: Bot, command: str):
     """Return help information."""
     return Gvar.HELP
 
-def handle_dir(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+def handle_dir(user: t_user, message: Message, bot: Bot, command: str):
     """Return current directory."""
     return user.current_dir
 
-def handle_queues(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+def handle_queues(user: t_user, message: Message, bot: Bot, command: str):
     """Return queue status."""
     return queuesZ()
 
-def handle_size(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+def handle_size(user: t_user, message: Message, bot: Bot, command: str):
     """Return file/directory size."""
     return user.size(command)
 
-def handle_list(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+def handle_list(user: t_user, message: Message, bot: Bot, command: str):
     """List directory contents."""
     return user.ls()
 
-def handle_restart(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+def handle_restart(user: t_user, message: Message, bot: Bot, command: str):
     """Restart the bot (admin only)."""
     return reset(message.from_user.id)
 
-def handle_cd(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+def handle_cd(user: t_user, message: Message, bot: Bot, command: str):
     """Change directory."""
     user.chdir(command)
     return "Changed !!!"
 
-def handle_mkdir(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+def handle_mkdir(user: t_user, message: Message, bot: Bot, command: str):
     """Create new directory."""
     user.mkdir(command)
     return "Created !!!"
 
-def handle_geturl(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+def handle_geturl(user: t_user, message: Message, bot: Bot, command: str):
     """Download file from URL."""
     return geturl(user, message.text)
 
-def handle_stats(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+def handle_stats(user: t_user, message: Message, bot: Bot, command: str):
     """Return system statistics."""
     return stats()
 
-def handle_link(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+def handle_link(user: t_user, message: Message, bot: Bot, command: str):
     """Generate direct link."""
     return GenerateDirectLink(message)
 
-def handle_eval(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+def handle_eval(user: t_user, message: Message, bot: Bot, command: str):
     """Execute Python code (admin only)."""
     if message.from_user.id in Gvar.ADMINS:
         exec(command)
     return None
 
-def handle_send(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+def handle_send(user: t_user, message: Message, bot: Bot, command: str):
     """Send file."""
     return send_file(bot, message, user)
 
-def handle_remove(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
+def handle_remove(user: t_user, message: Message, bot: Bot, command: str):
     """Remove file or directory."""
     return remove(str(message.text), user)
 
@@ -517,7 +519,7 @@ COMMAND_HANDLERS = {
     '/rm': handle_remove,
 }
 
-def USER_PROCCESS(user: t_user, message: Message, bot: pyrogram.client.Client):
+def USER_PROCCESS(user: t_user, message: Message, bot: Bot):
     """
     Process user commands. Refactored to use command handler mapping.
     """

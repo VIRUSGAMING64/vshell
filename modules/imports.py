@@ -1,18 +1,8 @@
 import modules.Gvar as Gvar
-import pyrogram
-from pyrogram.client import *
-from pyrogram.emoji import *
-from pyrogram.file_id import *
-from pyrogram.errors import *
-from pyrogram.types import *
-from pyrogram.methods import *
-from pyrogram.sync import *
-from pyrogram import *
-from pyrogram.utils import *
-from pyrogram.raw import *
-from pyrogram.sync import *
-from pyrogram.handlers import *
-from pyrogram.parser import *
+from telegram import Update, InlineQueryResultArticle, InputTextMessageContent, Bot
+from telegram.ext import Application, CommandHandler, MessageHandler, InlineQueryHandler, filters, ContextTypes
+from telegram.constants import ParseMode
+from telegram.error import TelegramError
 from math import *
 import time
 from modules.datatypes import *
@@ -28,3 +18,4 @@ from json.decoder import JSONDecoder
 import asyncio
 from modules.IDM import *
 from modules.web import WEB
+from threading import Thread

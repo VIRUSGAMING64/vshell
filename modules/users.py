@@ -1,9 +1,8 @@
 import os
-import pyrogram
+from telegram import Message
 from tarfile import TarFile
 import modules.Gvar as Gvar
 from modules.datatypes import *
-from pyrogram.emoji import *
 
 USERS = {}
 
@@ -38,16 +37,16 @@ class t_user:
         self.last_edit_time = 0
         self.download_id = -1
 
-    def __init__(self,message:pyrogram.types.Message|dict) -> None:
+    def __init__(self,message:Message|dict) -> None:
         try:
             self.download_chat = None
             self.id = message.from_user.id
-            self.dc_id = message.from_user.dc_id
+            self.dc_id = getattr(message.from_user, 'dc_id', None)  # PTB doesn't have dc_id
             self.first_name = message.from_user.first_name
             self.last_name = message.from_user.last_name
             self.lang_code = message.from_user.language_code
             self.username = message.from_user.username
-            self.is_premium = message.from_user.is_premium
+            self.is_premium = getattr(message.from_user, 'is_premium', False)  # PTB has is_premium
             self.base_dir = Gvar.ROOT + f"/{self.id}-{self.first_name}"
             self.current_dir = self.base_dir
             self.chat = message.chat.id
@@ -122,11 +121,11 @@ class t_user:
         for i in dirs:
             obj = self.current_dir+"/"+str(i)
             if os.path.isdir(obj):
-                sstr += f"{j} {FILE_FOLDER} " + i + "\n"
+                sstr += f"{j} 📁 " + i + "\n"  # Folder emoji
             elif os.path.isfile(obj):
-                sstr += f"{j} {PAGE_FACING_UP} " + i + "\n"
+                sstr += f"{j} 📄 " + i + "\n"  # Page emoji
             elif os.path.islink(obj):
-                sstr += f"{j} {LINK} " + i + "\n"
+                sstr += f"{j} 🔗 " + i + "\n"  # Link emoji
             else:
                 sstr += f"[{j}][other] " + i + "\n"
             j+=1
@@ -147,7 +146,7 @@ class t_user:
             self.current_dir = self.base_dir
         return self.current_dir
 
-def GetUser(message:pyrogram.types.Message):
+def GetUser(message:Message):
     id = message.chat.id
     try:
         return USERS[id]
