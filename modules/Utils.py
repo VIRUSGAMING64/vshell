@@ -66,7 +66,7 @@ def get_speed(cant:int,user:t_user):
     user.bytes_transmited = cant
     return round(mb_in_time)
 
-def progress(cant, total,user:t_user,bot:pyrogram.client.Client,UD = "uploading",reply_to = None):
+def progress(cant, total,user:t_user,bot:Client,UD = "uploading",reply_to = None):
     global last_time_progress_excecution
     actual_time = time.time_ns()
     UD += f"\n{get_speed(cant,user)}MB/S\nDOWNLOAD_ID:{str(reply_to)}\n"
