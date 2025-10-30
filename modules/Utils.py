@@ -87,7 +87,7 @@ def GenerateDirectLink(message:Message):
         uid = message.from_user.id
         name = message.from_user.first_name
     except:
-        return "try to use: /link filePath\examples:\n /link hola/new.zip\n /link hola.txt"
+        return r"try to use: /link filePath\examples:\n /link hola/new.zip\n /link hola.txt"
     return f"vshell.onrender.com/file/env/{uid}-{name}/{text}"
 
 def round(fl:float,prec:int=2):
