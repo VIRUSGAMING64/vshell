@@ -1,30 +1,15 @@
 import modules.Gvar as Gvar
 import pyrogram
-from pyrogram.client import *
-from pyrogram.emoji import *
-from pyrogram.file_id import *
-from pyrogram.errors import *
-from pyrogram.types import *
-from pyrogram.methods import *
-from pyrogram.sync import *
-from pyrogram import *
-from pyrogram.utils import *
-from pyrogram.raw import *
-from pyrogram.sync import *
-from pyrogram.handlers import *
-from pyrogram.parser import *
-from math import *
+from pyrogram.client import Client
+from pyrogram.types import Message, InlineQuery, InlineQueryResultArticle, InputTextMessageContent
+from pyrogram import filters
+from math import floor
 import time
-from modules.datatypes import *
+from modules.datatypes import t_user, GetUser, INVALID, MESSAGE, CLIENT, USER_ID
 import threading as th
 import requests as req
 import modules.Utils as Utils
-from modules.pool import *
-from modules.users import *
+from modules.pool import v_pool, v_Timer
+from modules.users import USERS
 import os
-from ctypes import *
-from json.encoder import JSONEncoder
-from json.decoder import JSONDecoder
-import asyncio
-from modules.IDM import *
 from modules.web import WEB

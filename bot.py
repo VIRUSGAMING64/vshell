@@ -45,11 +45,6 @@ bot = Client(
     bot_token=Gvar.TOKEN
 )
 
-"""
-if you need use as bot token remove phone_code and phone_number 
-and add line bot_token
-"""
-
 def DIRECT_REQUEST_HANDLER(client: Client, message: Message):
     if message == None:
         return
@@ -64,16 +59,11 @@ def DIRECT_REQUEST_HANDLER(client: Client, message: Message):
     except Exception as e:
         Gvar.LOG.append(str(e))
 
-def INLINE_REQUEST_HANDLER(client, message: InlineQuery):  # this is hard    
-    """
-    don't touch this function is from documentation
-    and I (VIRUSGAMING64) don't understand nothing
-    (no nothing nothing XD)
-    """
+def INLINE_REQUEST_HANDLER(client, message: InlineQuery):
+    """Handle inline queries for stats and queues."""
     query = message.query
-    id=message.from_user.id
     text = 'not implementated'
-    results=[]
+    results = []
     if message.query.startswith("/") == False:
         results.append(
         InlineQueryResultArticle(
@@ -217,18 +207,16 @@ def TO_SEND_QUEUE_HANDLER():
         except Exception as e:
             Gvar.LOG.append(str(e))
 
-def TORRENT_QUEUE_HANDLER(): #TODO
-    try:
-        pass
-    except Exception as e:
-        Gvar.LOG.append(str(e))
-        debug(e)
+def TORRENT_QUEUE_HANDLER():
+    """Placeholder for future torrent download feature."""
+    pass
 
 def INIT():
+    """Initialize bot and notify admins."""
     try:
         time.sleep(35)
-        for i in Gvar.ADMINS:
-            mes=bot.send_message(i,"bot online")
+        for admin_id in Gvar.ADMINS:
+            bot.send_message(admin_id, "bot online")
     except Exception as e:
         Gvar.LOG.append(str(e))
 
@@ -252,17 +240,6 @@ def ACTIVATOR():
         except Exception as e:
             Gvar.LOG.append(str(e))
             print(str(e))
-
-def TERMINAL():
-    while(True):
-        try:
-            data = input()
-            if data == "EOF":
-                break
-            exec(data)
-        except Exception as e:
-            Gvar.LOG.append(e)
-            print(e)
 
 pool = v_pool(
     [

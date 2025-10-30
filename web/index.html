@@ -37,10 +37,10 @@
                 }
             }
             return <div className='w-full h-16 mb-4 flex pt-4 justify-center'>
-                <div className='w-full h-full bg-slate-800 rounded-full mr-4 ml-2 border border-slate-700 flex items-center pl-4 pr-4'>
+                <div className='w-full h-full bg-slate-800 rounded-full mr-4 ml-2 border-2 border-slate-700 flex items-center pl-4 pr-4 hover:border-indigo-500/50 focus-within:border-indigo-500 transition-all duration-200'>
                     <input
                         type="text"
-                        className='w-full h-full bg-transparent outline-none'
+                        className='w-full h-full bg-transparent outline-none text-white placeholder-slate-400'
                         onInput={props.handleInput}
                         onKeyDown={onKeyDown}
                         value={props.message}
@@ -49,14 +49,14 @@
                 </div>
                 <div>
                     <button
-                        className='w-12 h-12 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-full mr-2 cursor-pointer active:scale-95 transition flex items-center justify-center shadow-md hover:shadow-indigo-700/30'
+                        className='w-12 h-12 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-full mr-2 cursor-pointer active:scale-95 transition-all duration-200 flex items-center justify-center shadow-lg hover:shadow-indigo-500/50 hover:scale-105'
                         role='button'
                         aria-label='Enviar'
                         onClick={props.handleSend}
                         title='Enviar'
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className='w-6 h-6'>
-                            <path d="M2.25 12l18-9-4.5 9 4.5 9-18-9zM15 12L3 6l9 6-9 6 12-6z"/>
+                            <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
                         </svg>
                     </button>
                 </div>
@@ -67,14 +67,14 @@
             let style1, style2;
             if (props.rol == 'user') {
                 style1 = 'flex w-full justify-end';
-                style2 = 'bg-indigo-500 p-4 m-4 rounded-lg w-2/3';
+                style2 = 'bg-gradient-to-br from-indigo-600 to-violet-600 p-4 m-4 rounded-2xl rounded-tr-sm w-2/3 shadow-lg';
             }
             else {
                 style1 = 'flex w-full';
-                style2 = 'bg-slate-700 p-4 m-4 rounded-lg w-2/3';
+                style2 = 'bg-slate-800 p-4 m-4 rounded-2xl rounded-tl-sm w-2/3 shadow-md border border-slate-700';
             }
             if (props.type === 'ERROR') {
-                style2 += ' border border-red-500';
+                style2 += ' border-2 border-red-500 bg-red-900/20';
             }
 
             const isAI = props.rol !== 'user';
@@ -193,7 +193,17 @@
 
             return <div className='flex-col flex h-full'>
                 <Messages chat={chat} />
-                <div className='opacity-80 text-sm px-4'>{loading ? 'Generando respuesta…' : ''}</div>
+                <div className='opacity-80 text-sm px-4 flex items-center gap-2 text-indigo-400'>
+                    {loading ? (
+                        <>
+                            <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Generando respuesta…
+                        </>
+                    ) : ''}
+                </div>
                 <UserInput handleInput={handleInput} handleSend={handleSend} message={message} />
             </div>
         }
@@ -282,13 +292,18 @@
             function renderTabContent(){
                 if (active==='API'){
                     return <div className='p-6'>
-                        <div className='text-2xl font-bold mb-4'>API (modules/web.py)</div>
+                        <div className='text-2xl font-bold mb-4 flex items-center gap-2'>
+                            <svg className="w-7 h-7 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                            </svg>
+                            API (modules/web.py)
+                        </div>
                         <div className='space-y-2'>
                             {routes.map((e,i)=>
-                                <div key={i} className='p-3 bg-slate-900/70 backdrop-blur rounded border border-slate-800 flex items-start gap-3'>
-                                    <span className={'px-2 py-0.5 rounded text-xs font-bold ' + ((e.methods||[]).includes('POST')? 'bg-pink-700':'bg-indigo-700')}>{(e.methods||[]).join('/') || 'GET'}</span>
-                                    <code className='text-sm'>{e.path}</code>
-                                    {e.endpoint? <span className='text-sm text-slate-300'>— {e.endpoint}</span>: null}
+                                <div key={i} className='p-4 bg-gradient-to-r from-slate-900 to-slate-800 backdrop-blur rounded-lg border border-slate-700 hover:border-indigo-500/50 transition-all duration-200 flex items-start gap-3 hover:shadow-lg hover:shadow-indigo-500/10'>
+                                    <span className={'px-3 py-1 rounded-md text-xs font-bold ' + ((e.methods||[]).includes('POST')? 'bg-pink-600 text-white':'bg-indigo-600 text-white')}>{(e.methods||[]).join('/') || 'GET'}</span>
+                                    <code className='text-sm font-mono text-slate-200'>{e.path}</code>
+                                    {e.endpoint? <span className='text-sm text-slate-400'>— {e.endpoint}</span>: null}
                                 </div>
                             )}
                         </div>
@@ -336,23 +351,40 @@
                 });
             }, [items, q]);
             return <div className='w-full bg-slate-950 pl-4 pr-7 pt-8 overflow-y-auto'>
-                <div className='text-4xl pb-4 font-bold'>Comandos</div>
+                <div className='text-4xl pb-4 font-bold bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent'>Comandos</div>
                 <div className='pb-4 text-slate-300'>Busca y revisa la explicación de cada comando.</div>
                 <div className='pb-6'>
-                    <input
-                        type='text'
-                        value={q}
-                        onChange={e=>setQ(e.target.value)}
-                        placeholder='Filtrar por nombre o descripción...'
-                        className='w-full md:w-1/2 bg-slate-800 border border-slate-700 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-600'
-                    />
-                    <div className='text-slate-400 mt-2 text-sm'>{list.length} de {items.length} resultados</div>
+                    <div className='relative'>
+                        <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
+                            <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                        <input
+                            type='text'
+                            value={q}
+                            onChange={e=>setQ(e.target.value)}
+                            placeholder='Filtrar por nombre o descripción...'
+                            className='w-full md:w-1/2 pl-10 bg-slate-800 border-2 border-slate-700 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200'
+                        />
+                    </div>
+                    <div className='text-slate-400 mt-2 text-sm flex items-center gap-2'>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {list.length} de {items.length} resultados
+                    </div>
                 </div>
                 <div className='grid gap-3'>
                     {list.map((command, idx) => (
-                        <div key={idx} className='p-4 bg-slate-900 rounded-md border border-slate-800'>
-                            <div className='text-lg font-semibold'><code className='bg-slate-800 px-2 py-1 rounded'>{command[0]}</code></div>
-                            <div className='text-slate-200 mt-2'>{command[1]}</div>
+                        <div key={idx} className='p-5 bg-gradient-to-br from-slate-900 to-slate-800 rounded-lg border border-slate-700 hover:border-indigo-500/50 transition-all duration-200 hover:shadow-lg hover:shadow-indigo-500/10'>
+                            <div className='text-lg font-semibold flex items-center gap-2'>
+                                <svg className="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <code className='bg-slate-800 px-3 py-1.5 rounded-md border border-slate-700'>{command[0]}</code>
+                            </div>
+                            <div className='text-slate-300 mt-3 ml-7'>{command[1]}</div>
                         </div>
                     ))}
                 </div>
@@ -396,43 +428,63 @@
                 );
             }, [rows, q]);
             return <div className='w-full bg-slate-950 pl-4 pr-7 pt-8 overflow-y-auto'>
-                <div className='text-4xl pb-4 font-bold'>Usuarios</div>
+                <div className='text-4xl pb-4 font-bold bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent'>Usuarios</div>
                 <div className='pb-4 text-slate-300'>Personas que le han escrito al bot.</div>
                 <div className='pb-6'>
-                    <input
-                        type='text'
-                        value={q}
-                        onChange={e=>setQ(e.target.value)}
-                        placeholder='Buscar por id, username o nombre...'
-                        className='w-full md:w-1/2 bg-slate-800 border border-slate-700 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-600'
-                    />
-                    <div className='text-slate-400 mt-2 text-sm'>{list.length} usuarios</div>
+                    <div className='relative'>
+                        <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
+                            <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                        <input
+                            type='text'
+                            value={q}
+                            onChange={e=>setQ(e.target.value)}
+                            placeholder='Buscar por id, username o nombre...'
+                            className='w-full md:w-1/2 pl-10 bg-slate-800 border-2 border-slate-700 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200'
+                        />
+                    </div>
+                    <div className='text-slate-400 mt-2 text-sm flex items-center gap-2'>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                        {list.length} usuarios
+                    </div>
                 </div>
-                <div className='overflow-x-auto border border-slate-800 rounded'>
+                <div className='overflow-x-auto border-2 border-slate-800 rounded-lg shadow-xl'>
                     <table className='min-w-full text-left text-sm'>
-                        <thead className='bg-slate-900'>
+                        <thead className='bg-gradient-to-r from-slate-900 to-slate-800'>
                             <tr>
-                                <th className='px-3 py-2 border-b border-slate-800'>ID</th>
-                                <th className='px-3 py-2 border-b border-slate-800'>Username</th>
-                                <th className='px-3 py-2 border-b border-slate-800'>Nombre</th>
-                                <th className='px-3 py-2 border-b border-slate-800'>Apellidos</th>
-                                <th className='px-3 py-2 border-b border-slate-800'>DC</th>
-                                <th className='px-3 py-2 border-b border-slate-800'>Premium</th>
-                                <th className='px-3 py-2 border-b border-slate-800'>Lang</th>
-                                <th className='px-3 py-2 border-b border-slate-800'>Chat</th>
+                                <th className='px-4 py-3 border-b-2 border-slate-700 font-semibold text-indigo-300'>ID</th>
+                                <th className='px-4 py-3 border-b-2 border-slate-700 font-semibold text-indigo-300'>Username</th>
+                                <th className='px-4 py-3 border-b-2 border-slate-700 font-semibold text-indigo-300'>Nombre</th>
+                                <th className='px-4 py-3 border-b-2 border-slate-700 font-semibold text-indigo-300'>Apellidos</th>
+                                <th className='px-4 py-3 border-b-2 border-slate-700 font-semibold text-indigo-300'>DC</th>
+                                <th className='px-4 py-3 border-b-2 border-slate-700 font-semibold text-indigo-300'>Premium</th>
+                                <th className='px-4 py-3 border-b-2 border-slate-700 font-semibold text-indigo-300'>Lang</th>
+                                <th className='px-4 py-3 border-b-2 border-slate-700 font-semibold text-indigo-300'>Chat</th>
                             </tr>
                         </thead>
                         <tbody>
                             {list.map(u => (
-                                <tr key={u.id} className='hover:bg-slate-900/60'>
-                                    <td className='px-3 py-2 border-b border-slate-800'>{u.id}</td>
-                                    <td className='px-3 py-2 border-b border-slate-800'>{u.username || '-'}</td>
-                                    <td className='px-3 py-2 border-b border-slate-800'>{u.first_name || '-'}</td>
-                                    <td className='px-3 py-2 border-b border-slate-800'>{u.last_name || '-'}</td>
-                                    <td className='px-3 py-2 border-b border-slate-800'>{u.dc_id || '-'}</td>
-                                    <td className='px-3 py-2 border-b border-slate-800'>{u.is_premium ? 'Sí' : 'No'}</td>
-                                    <td className='px-3 py-2 border-b border-slate-800'>{u.lang_code || '-'}</td>
-                                    <td className='px-3 py-2 border-b border-slate-800'>{u.chat || '-'}</td>
+                                <tr key={u.id} className='hover:bg-slate-800/60 transition-colors duration-150'>
+                                    <td className='px-4 py-3 border-b border-slate-800 font-mono text-slate-300'>{u.id}</td>
+                                    <td className='px-4 py-3 border-b border-slate-800'>{u.username || '-'}</td>
+                                    <td className='px-4 py-3 border-b border-slate-800'>{u.first_name || '-'}</td>
+                                    <td className='px-4 py-3 border-b border-slate-800'>{u.last_name || '-'}</td>
+                                    <td className='px-4 py-3 border-b border-slate-800'>{u.dc_id || '-'}</td>
+                                    <td className='px-4 py-3 border-b border-slate-800'>
+                                        {u.is_premium ? 
+                                            <span className='inline-flex items-center px-2 py-1 rounded-full text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'>
+                                                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                                                Sí
+                                            </span> : 
+                                            <span className='text-slate-500'>No</span>
+                                        }
+                                    </td>
+                                    <td className='px-4 py-3 border-b border-slate-800'>{u.lang_code || '-'}</td>
+                                    <td className='px-4 py-3 border-b border-slate-800 font-mono text-xs text-slate-400'>{u.chat || '-'}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -459,30 +511,38 @@
                 return ()=>{ alive=false; clearInterval(t); };
             },[]);
             const icons = {
-                'Uptime': '⏱️',
-                'CPU': '🧠',
-                'CPU SPEED': '⚡',
-                'CPU COUNT': '🧩',
-                'CPU_TEMP': '🌡️',
-                'MAX_CPU_TEMP': '🔥',
-                'RAM': '💾',
-                'RAM USED': '📈',
-                'RAM FREE': '📉',
-                'TOTAL DISK': '💽',
-                'DISK USED': '🗄️',
-                'DISK FREE': '📦'
+                'Uptime': <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+                'CPU': <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" /></svg>,
+                'CPU SPEED': <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>,
+                'CPU COUNT': <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" /></svg>,
+                'CPU_TEMP': <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>,
+                'MAX_CPU_TEMP': <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" /></svg>,
+                'RAM': <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" /></svg>,
+                'RAM USED': <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>,
+                'RAM FREE': <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>,
+                'TOTAL DISK': <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" /></svg>,
+                'DISK USED': <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>,
+                'DISK FREE': <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
             };
             return <div className='w-full bg-slate-950 pl-4 pr-7 pt-6 pb-6 overflow-y-auto'>
-                <div className='text-4xl pb-4 font-bold'>Estado del Bot</div>
+                <div className='text-4xl pb-4 font-bold bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent flex items-center gap-3'>
+                    <svg className="w-10 h-10 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    Estado del Bot
+                </div>
                 <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
                     {stats.map((row, idx)=>{
                         const k = row[0] || '';
                         const v = row[1] || '';
-                        const ico = icons[k] || 'ℹ️';
+                        const ico = icons[k] || <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
                         return (
-                            <div key={idx} className='p-4 bg-slate-900/70 backdrop-blur rounded border border-slate-800'>
-                                <div className='text-sm text-slate-400'>{ico} {k}</div>
-                                <div className='text-xl font-semibold mt-1'>{v}</div>
+                            <div key={idx} className='p-5 bg-gradient-to-br from-slate-900 to-slate-800 backdrop-blur rounded-lg border border-slate-700 hover:border-indigo-500/50 transition-all duration-200 hover:shadow-lg hover:shadow-indigo-500/10'>
+                                <div className='text-sm text-slate-400 flex items-center gap-2'>
+                                    <span className='text-indigo-400'>{ico}</span>
+                                    <span>{k}</span>
+                                </div>
+                                <div className='text-2xl font-bold mt-2 text-white'>{v}</div>
                             </div>
                         );
                     })}
@@ -495,10 +555,22 @@
                 data.setActive(data.title)
             }
             const isActive = data.active === data.title;
-            const base = 'p-2 pl-4 pr-4 rounded-md m-2 cursor-pointer transition-all';
-            const cls = isActive ? 'bg-indigo-600 hover:bg-indigo-600' : 'bg-slate-800 hover:bg-slate-700 active:bg-slate-800';
+            const base = 'p-3 pl-4 pr-4 rounded-lg m-2 cursor-pointer transition-all duration-200 font-medium';
+            const cls = isActive ? 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 shadow-lg' : 'bg-slate-800 hover:bg-slate-700 active:bg-slate-800 hover:shadow-md';
+            
+            // Icon mapping for different sections
+            const iconMap = {
+                'commands': <svg className="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
+                'users': <svg className="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>,
+                'chat': <svg className="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>,
+                'docs': <svg className="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>,
+                'stats': <svg className="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+            };
+            
+            const icon = iconMap[data.title] || null;
+            
             return <div className={base + ' ' + cls} onClick={handleClick}>
-                {data.title}
+                {icon}{data.title}
             </div>
         }
 
@@ -560,13 +632,11 @@
         }
 
         function CloseButton(data) {
-            return <div className='bg-slate-950'>
-                <div className='w-12 h-12 flex items-center justify-center cursor-pointer hover:bg-slate-900/50 rounded-md' onClick={data.toggle_panel}>
-                    <div>
-                        <div className='w-4 h-0.5 bg-white mt-1 mb-1'></div>
-                        <div className='w-4 h-0.5 bg-white mt-1 mb-1'></div>
-                        <div className='w-4 h-0.5 bg-white mt-1 mb-1'></div>
-                    </div>
+            return <div className='bg-slate-950 border-r border-slate-800'>
+                <div className='w-14 h-14 flex items-center justify-center cursor-pointer hover:bg-slate-800/50 rounded-md transition-all duration-200 active:scale-95' onClick={data.toggle_panel}>
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
                 </div>
             </div>;
         }
