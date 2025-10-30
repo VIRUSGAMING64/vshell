@@ -82,12 +82,13 @@ def progress(cant, total,user:t_user,bot:pyrogram.client.Client,UD = "uploading"
         user.download_id = bot.edit_message_text(user.chat,user.download_id,cant).id
 
 def GenerateDirectLink(message:Message):
+    """Generate a direct download link for a file."""
     try:
         text = message.text.split(" ")[1]
         uid = message.from_user.id
         name = message.from_user.first_name
     except:
-        return r"try to use: /link filePath\examples:\n /link hola/new.zip\n /link hola.txt"
+        return "try to use: /link filePath\nexamples:\n /link hola/new.zip\n /link hola.txt"
     return f"vshell.onrender.com/file/env/{uid}-{name}/{text}"
 
 def round(fl:float,prec:int=2):
