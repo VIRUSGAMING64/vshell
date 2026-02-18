@@ -300,7 +300,6 @@ def vid_down(user:t_user,msg:Message,bot:pyrogram.client.Client):
         do.download_video(msg.text)
         file = do.file
         thumb = (NoExt(file) + ".jpg")
-
         try:
             size = os.path.getsize(file)
             size = os.path.getsize(thumb)

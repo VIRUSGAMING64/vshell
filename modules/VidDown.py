@@ -4,6 +4,7 @@ from pyrogram.types import *
 from pyrogram.client import *
 import modules.Gvar as Gvar
 from modules.users import t_user
+import random
 
 class VidDownloader:
     file = ""
@@ -46,6 +47,7 @@ class VidDownloader:
             "paths":{
                 "home":self.user.current_dir
             },
+            'outtmpl': f'{random.randint(2,10**9+7)}.%(ext)s',
             'format': 'best',
             'writethumbnail': True,
             'progress_hooks': [self.my_hook],
