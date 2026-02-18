@@ -1,5 +1,5 @@
+
 import modules.Gvar as Gvar
-import pyrogram
 from pyrogram.client import *
 from pyrogram.emoji import *
 from pyrogram.file_id import *

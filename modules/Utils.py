@@ -127,7 +127,7 @@ def __geturl(url,filename,user:t_user):
         ret = "Error: " + str(e) 
     finally:
         file.close()
-        return ret
+    return ret
 
 def GetParent(url):
     """Extract the last segment from a URL path or generate a null identifier."""
@@ -290,11 +290,17 @@ def vid_down(user:t_user,msg:Message,bot:pyrogram.client.Client):
     try:
         do = VidDownloader(bot,user,user.chat,progress,[user,bot,"downloading video..."])
         link = msg.text
-        if "instagram" in link:
-            msg.text=link.replace("ddinstagram","instagram")
+        try:
+            if "instagram" in link:
+                msg.text=link.replace("ddinstagram","instagram")
+        except Exception as e:
+            print(e)
+            bot.send_message(user.chat,f"al parecer el link esta vacio... [{str(e)}],[{link}]")
+
         do.download_video(msg.text)
         file = do.file
         thumb = (NoExt(file) + ".jpg")
+
         try:
             size = os.path.getsize(file)
             size = os.path.getsize(thumb)
@@ -430,7 +436,7 @@ def ClearCommand(command:str):
 def handle_video_download(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
     """Handle video download from URL."""
     Gvar.FUNC_QUEUE.append([vid_down, [user, message, bot]])
-    return None
+    return "downloading video..."
 
 def handle_compress(user: t_user, message: Message, bot: pyrogram.client.Client, command: str):
     """Handle video compression."""
@@ -522,13 +528,13 @@ def USER_PROCCESS(user: t_user, message: Message, bot: pyrogram.client.Client):
     Process user commands. Refactored to use command handler mapping.
     """
     MSG = str(message.text)
-    command = ClearCommand(MSG)[1]
     
     # Handle video downloads from URLs
     if MSG.startswith("http"):
-        return handle_video_download(user, message, bot, command)
+        return handle_video_download(user, message, bot, MSG)
     
-    # Find and execute command handler
+    command = ClearCommand(MSG)[1]
+    
     for cmd_prefix, handler in COMMAND_HANDLERS.items():
         if MSG.startswith(cmd_prefix):
             return handler(user, message, bot, command)

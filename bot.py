@@ -135,6 +135,8 @@ def DOWNLOAD_MEDIA_HANDLER(data):
             msg.reply("Downloaded !!!!",reply_to_message_id=msg.id)
             time.sleep(60)
         except Exception as e:
+            if msg.text.startswith("http"):
+                return "please wait..."
             debug(e)
             print("in downloads first try")
             msg.reply("Error downloading media")
